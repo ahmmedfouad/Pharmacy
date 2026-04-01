@@ -65,15 +65,15 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
       <ReactMarkdown 
         components={{
           p: ({node, ...props}) => <p className="mb-4 last:mb-0 inline" {...props} />,
-          ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2 marker:text-blue-500" {...props} />,
-          ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2 marker:text-blue-500 font-medium" {...props} />,
+          ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2 marker:text-blue-600" {...props} />,
+          ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2 marker:text-blue-600 font-medium" {...props} />,
           li: ({node, ...props}) => <li className="pl-1" {...props} />,
           strong: ({node, ...props}) => <strong className="font-semibold text-slate-900" {...props} />,
         }}
       >
         {displayedContent}
       </ReactMarkdown>
-      {isTyping && <span className="inline-block w-2.5 h-4 bg-blue-500 rounded-sm animate-pulse ml-1 align-middle" />}
+      {isTyping && <span className="inline-block w-2.5 h-4 bg-blue-600 rounded-sm animate-pulse ml-1 align-middle" />}
     </div>
   );
 }
@@ -265,11 +265,11 @@ export function AgentVoiceChat() {
   return (
     <div className="flex flex-col h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm">
+      <div className="bg-white border-b border-slate-200/60 px-6 py-4 shadow-md shadow-blue-900/5">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Bot className="w-6 h-6 text-blue-500" />
+              <Bot className="w-6 h-6 text-blue-600" />
               {t.title}
             </h1>
             <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
@@ -293,14 +293,14 @@ export function AgentVoiceChat() {
             >
               {msg.role === "agent" && (
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-blue-500" />
+                  <Bot className="w-5 h-5 text-blue-600" />
                 </div>
               )}
               <div
                 className={`max-w-2xl rounded-lg px-4 py-3 ${
                   msg.role === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white text-slate-900 border border-slate-200"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-slate-900 border border-slate-200/60"
                 }`}
               >
                 <TypingMarkdown
@@ -310,7 +310,7 @@ export function AgentVoiceChat() {
                 />
               </div>
               {msg.role === "user" && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
                 </div>
               )}
@@ -319,14 +319,14 @@ export function AgentVoiceChat() {
           {isLoading && (
             <div className="flex gap-3 justify-start">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
               </div>
             </div>
           )}
           {isSpeaking && (
             <div className="flex gap-3 justify-start">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <Volume2 className="w-5 h-5 text-blue-500 animate-pulse" />
+                <Volume2 className="w-5 h-5 text-blue-600 animate-pulse" />
               </div>
               <div className="text-sm text-slate-500 py-2">{t.speaking}</div>
             </div>
@@ -336,7 +336,7 @@ export function AgentVoiceChat() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-slate-200 bg-white px-6 py-4">
+      <div className="border-t border-slate-200/60 bg-white px-6 py-4">
         <div className="max-w-4xl mx-auto">
           <p className="text-xs text-slate-500 mb-4 text-center">{t.disclaimer}</p>
           <div className="flex gap-3">
@@ -357,7 +357,7 @@ export function AgentVoiceChat() {
               className={`px-4 py-3 rounded-lg transition flex items-center gap-2 font-medium ${
                 isRecording
                   ? "bg-red-500 text-white hover:bg-red-600"
-                  : "bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+                  : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
               }`}
             >
               {isRecording ? (
@@ -377,7 +377,7 @@ export function AgentVoiceChat() {
             <button
               onClick={handleSendMessage}
               disabled={!input.trim() || isLoading}
-              className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
+              className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

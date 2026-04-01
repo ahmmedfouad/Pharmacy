@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pharmacist AI Chatbot",
-  description: "Internal AI Project for Huawei",
+  title: "MedScan - Medical Ai Assistant",
+  description: "MedScan is an AI-powered medical assistant designed to help users understand and manage their health. It provides personalized insights, answers medical questions, and offers guidance on various health topics. With MedScan, you can easily access reliable medical information and support for a healthier lifestyle.",
 };
 
 export default function RootLayout({

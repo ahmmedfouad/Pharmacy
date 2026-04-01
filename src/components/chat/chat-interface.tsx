@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Send, Image as ImageIcon, X, Loader2, User, ShieldPlus, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2 } from "lucide-react";
+import Logo from "@/assets/Logo.png";
 
 type Message = {
   id: number;
@@ -52,26 +53,26 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
       <ReactMarkdown 
         components={{
           p: ({node, ...props}) => <p className="mb-4 last:mb-0 inline" {...props} />,
-          ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2 marker:text-emerald-500" {...props} />,
-          ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2 marker:text-emerald-500 font-medium" {...props} />,
+          ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2 marker:text-blue-600" {...props} />,
+          ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2 marker:text-blue-600 font-medium" {...props} />,
           li: ({node, ...props}) => <li className="pl-1" {...props} />,
           strong: ({node, ...props}) => <strong className="font-semibold text-slate-900" {...props} />,
           h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-6 mb-3 text-slate-900" {...props} />,
           h4: ({node, ...props}) => <h4 className="text-base font-bold mt-4 mb-2 text-slate-900" {...props} />,
           a: ({node, ...props}) => <a className="text-blue-600 hover:underline" {...props} />,
-          blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-emerald-500 pl-4 italic text-slate-600 bg-slate-50 py-2 my-4 rounded-r-lg" {...props} />
+          blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-600 pl-4 italic text-slate-600 bg-slate-50 py-2 my-4 rounded-r-lg" {...props} />
         }}
       >
         {displayedContent}
       </ReactMarkdown>
-      {isTyping && <span className="inline-block w-2.5 h-4 bg-emerald-500 rounded-sm animate-pulse ml-1 align-middle" />}
+      {isTyping && <span className="inline-block w-2.5 h-4 bg-blue-600 rounded-sm animate-pulse ml-1 align-middle" />}
     </div>
   );
 }
 
 const translations = {
   en: {
-    title: "Pharmacy AI",
+    title: "MedScan AI",
     subtitle: "Expert Medical Assistant & Imaging",
     placeholder: "Ask about medications, or upload an X-ray/CT scan...",
     disclaimer: "AI can make mistakes. Always consult with a certified medical professional or radiologist.",
@@ -84,7 +85,7 @@ const translations = {
     recentChats: "Recent Chats"
   },
   ar: {
-    title: "صيدلية الذكاء الاصطناعي",
+    title: "مساعدك الطبى",
     subtitle: "مساعد طبي وخبير تصوير",
     placeholder: "اسأل عن الأدوية، أو ارفع صورة أشعة/مقطعية...",
     disclaimer: "قد يخطئ الذكاء الاصطناعي. استشر طبيبًا معتمدًا أو أخصائي أشعة دائمًا.",
@@ -482,7 +483,7 @@ export function ChatInterface() {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-30 w-72 bg-slate-50 border-${lang === 'ar' ? 'l' : 'r'} border-slate-200 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+      <div className={`fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-30 w-72 bg-slate-50 border-${lang === 'ar' ? 'l' : 'r'} border-slate-200/60 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
         isSidebarOpen 
           ? "translate-x-0" 
           : (lang === 'ar' ? "translate-x-full" : "-translate-x-full")
@@ -490,7 +491,7 @@ export function ChatInterface() {
          <div className="p-4 h-full flex flex-col gap-4">
             <button 
               onClick={createNewChat}
-              className="flex items-center gap-2 justify-center w-full bg-emerald-500 text-white rounded-xl py-3 px-4 font-semibold hover:bg-emerald-600 transition-colors shadow-sm active:scale-95"
+              className="flex items-center gap-2 justify-center w-full bg-blue-600 text-white rounded-xl py-3 px-4 font-semibold hover:bg-blue-700 transition-colors shadow-sm active:scale-95"
             >
               <Plus size={20} />
               <span>{t.newChat}</span>
@@ -509,8 +510,8 @@ export function ChatInterface() {
                           : "hover:bg-slate-100 text-slate-600"
                       }`}
                     >
-                       <MessageSquare size={18} className={`flex-shrink-0 ${session.id === currentSessionId ? "text-emerald-500" : "text-slate-400"}`} />
-                       <span className={`truncate text-sm flex-1 ${session.id === currentSessionId ? "font-semibold text-emerald-900" : "font-medium"}`} dir="auto">{session.title}</span>
+                       <MessageSquare size={18} className={`flex-shrink-0 ${session.id === currentSessionId ? "text-blue-600" : "text-slate-400"}`} />
+                       <span className={`truncate text-sm flex-1 ${session.id === currentSessionId ? "font-semibold text-blue-900" : "font-medium"}`} dir="auto">{session.title}</span>
                     </button>
                  ))}
                </div>
@@ -521,7 +522,7 @@ export function ChatInterface() {
       {/* Main Chat Area Context */}
       <div className="flex flex-col flex-1 min-w-0 h-screen relative transition-all duration-300">
         {/* Sleek Header */}
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-6 py-4 flex items-center justify-between shadow-sm">
+        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-100/80 px-4 md:px-6 py-4 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2 md:gap-3">
             <button 
               className="p-2 -ml-2 mr-1 text-slate-500 hover:bg-slate-100 rounded-full md:hidden"
@@ -530,12 +531,12 @@ export function ChatInterface() {
             >
               <Menu size={24} />
             </button>
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-md flex-shrink-0">
-              <ShieldPlus size={20} className="md:w-6 md:h-6" strokeWidth={2.5} />
+            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center shadow-md flex-shrink-0 overflow-hidden">
+              <img src={Logo.src} alt="Logo" className="w-full h-full object-cover scale-[1.35]" />
             </div>
             <div>
               <h1 className="text-base md:text-lg font-bold text-slate-900 leading-tight">{t.title}</h1>
-              <p className="text-[10px] md:text-xs font-medium text-emerald-600 hidden xs:block">{t.subtitle}</p>
+              <p className="text-[10px] md:text-xs font-medium text-blue-700 hidden xs:block">{t.subtitle}</p>
             </div>
           </div>
           
@@ -543,7 +544,7 @@ export function ChatInterface() {
           <button
             onClick={toggleLanguage}
             disabled={isTranslating}
-            className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full border border-slate-200 hover:bg-slate-50 transition-colors text-xs md:text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 flex-shrink-0"
+            className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full border border-slate-200/60 hover:bg-slate-50 transition-colors text-xs md:text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-600 flex-shrink-0"
           >
             <Globe size={16} />
             <span>{lang === "en" ? "العربية" : "EN"}</span>
@@ -558,16 +559,16 @@ export function ChatInterface() {
               key={msg.id} 
               id={`message-${msg.id}`}
               className={`flex gap-4 p-4 md:p-6 rounded-3xl transition-all ${
-                msg.role === "ai" ? "bg-slate-50 border border-slate-100 shadow-sm" : ""
+                msg.role === "ai" ? "bg-slate-50 border border-slate-100/80 shadow-sm" : ""
               }`}
             >
               {/* Avatar */}
               <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                 msg.role === "user" 
                   ? "bg-slate-200 text-slate-600" 
-                  : "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm ring-2 ring-white"
+                  : "bg-white shadow-sm ring-2 ring-white overflow-hidden"
               }`}>
-                {msg.role === "user" ? <User size={18} /> : <ShieldPlus size={20} />}
+                {msg.role === "user" ? <User size={18} /> : <img src={Logo.src} alt="AI" className="w-full h-full object-cover scale-[1.35]" />}
               </div>
 
               {/* Message Content */}
@@ -580,7 +581,7 @@ export function ChatInterface() {
                 {msg.images && msg.images.length > 0 && (
                   <div className="flex flex-wrap gap-3 mb-3 mt-2">
                     {msg.images.map((imgBase64, idx) => (
-                      <div key={idx} className="relative w-32 h-32 md:w-48 md:h-48 rounded-xl overflow-hidden shadow-sm border border-slate-200">
+                      <div key={idx} className="relative w-32 h-32 md:w-48 md:h-48 rounded-xl overflow-hidden shadow-sm border border-slate-200/60">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
                           src={imgBase64} 
@@ -616,9 +617,9 @@ export function ChatInterface() {
           
           {/* Multiple Image Thumbnails Preview popup */}
           {attachedImages.length > 0 && (
-            <div className="absolute -top-24 left-4 bg-white/90 backdrop-blur p-2 rounded-2xl shadow-lg ring-1 ring-slate-200 animate-in fade-in slide-in-from-bottom-2 flex gap-2 max-w-[calc(100%-2rem)] overflow-x-auto scrollbar-hide">
+            <div className="absolute -top-24 left-4 bg-white/90 backdrop-blur p-2 rounded-xl shadow-lg ring-1 ring-slate-200 animate-in fade-in slide-in-from-bottom-2 flex gap-2 max-w-[calc(100%-2rem)] overflow-x-auto scrollbar-hide">
               {attachedImages.map((img, idx) => (
-                <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden group flex-shrink-0 border border-slate-200">
+                <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden group flex-shrink-0 border border-slate-200/60">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img} alt={`Attachment ${idx + 1}`} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -643,14 +644,14 @@ export function ChatInterface() {
           {/* Form Dock */}
           <form 
             onSubmit={handleSubmit} 
-            className="flex items-end gap-2 bg-white ring-1 ring-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] p-2 pl-4 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:shadow-md transition-all duration-300"
+            className="flex items-end gap-2 bg-white ring-1 ring-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.06)] shadow-blue-900/5 rounded-[2rem] p-2 pl-4 focus-within:ring-2 focus-within:ring-blue-600 focus-within:shadow-md transition-all duration-300"
           >
             <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageChange} className="hidden" />
             
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors flex-shrink-0 self-center"
+              className="p-3 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0 self-center"
               aria-label="Attach images"
             >
               <ImageIcon size={22} />
@@ -673,7 +674,7 @@ export function ChatInterface() {
               className={`p-3 rounded-full flex-shrink-0 self-center transition-colors ${
                 isRecording
                   ? "bg-red-500 text-white hover:bg-red-600"
-                  : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                  : "text-slate-400 hover:text-blue-700 hover:bg-blue-50"
               }`}
               aria-label={isRecording ? "Stop recording" : "Start voice chat"}
             >
@@ -686,7 +687,7 @@ export function ChatInterface() {
               className={`p-3 md:p-4 rounded-full flex-shrink-0 self-center transition-all duration-300 ${
                 ((!inputValue.trim() && !isRecording && attachedImages.length === 0) || isLoading)
                   ? "bg-slate-100 text-slate-300 cursor-not-allowed"
-                  : "bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-md active:scale-95"
+                  : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:scale-95"
               }`}
               aria-label="Send message"
             >
@@ -699,7 +700,7 @@ export function ChatInterface() {
             </div>
           )}
           {isSpeaking && (
-            <div className="text-center mt-3 text-sm text-emerald-600 font-medium animate-pulse">
+            <div className="text-center mt-3 text-sm text-blue-700 font-medium animate-pulse">
               <Volume2 size={16} className="inline mr-1" /> Speaking...
             </div>
           )}
