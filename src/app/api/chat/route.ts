@@ -1,70 +1,155 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import { OpenAI } from "openai";
+import fs from "fs";
+import path from "path";
 
-// Initialize the Google Generative AI client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+// Initialize the OpenAI client using the Groq Base URL
+const openai = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY || "",
+  baseURL: "https://api.groq.com/openai/v1",
+});
 
 export async function POST(req: Request) {
   try {
-    const { messages, language } = await req.json();
-
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: "Missing Gemini API Key." }, { status: 500 });
+    const body = await req.json();
+    
+    // We handle exactly what the user requested: message and imageBase64
+    // We also silently fall back to `messages` from the older implementation so the UI doesn't break.
+    let message = body.message;
+    let imageBase64 = body.imageBase64;
+    
+    // Fallback for existing UI implementation if it sends `messages` instead of direct strings
+    if (!message && body.messages && body.messages.length > 0) {
+      const lastMessage = body.messages[body.messages.length - 1];
+      message = lastMessage.content;
+      if (lastMessage.images && lastMessage.images.length > 0) {
+        imageBase64 = lastMessage.images[0]; // grab the first image if there's an array
+      }
     }
 
-    const langName = language === 'ar' ? 'Arabic' : 'English';
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json({ error: "Missing GROQ_API_KEY." }, { status: 500 });
+    }
 
-    // Initialize the model
-    const modelName = "gemini-2.5-flash";
-    const model = genAI.getGenerativeModel({ 
-      model: modelName,
-      systemInstruction: `You are an expert pharmacist and medical imaging AI. Your job is to provide accurate information about medications, active ingredients, alternatives, and side effects. You are also capable of analyzing medical images such as X-rays and CT scans to provide an overview and description.
-CRITICAL RULES:
-1. Always respond in ${langName}.
-2. Always use relevant emojis throughout your response to make it easy to read and friendly.
-3. Depending on the medicine's category, always provide helpful guides or tips (e.g., best time to take, dietary restrictions, how to store it).
-4. If the user provides an image (pill, prescription, X-ray, or CT scan), identify it and explain its uses or provide a descriptive overview.
-5. Do NOT answer any non-medical questions.
-6. Always advise the user to consult a real certified doctor or radiologist before taking any medication or drawing conclusions from scan descriptions, as you are an AI and can make mistakes.`
-    });
+    // Default system instructions (Pharmacist & Medical Analyst)
+    let systemPrompt = `You are an expert pharmacist and medical image analyzer. 
+For medication questions, use the provided database context if available. 
+For any provided images (like X-rays, MRIs, CT scans, pill identifiers, or medical prescriptions), you MUST analyze them thoroughly, describe what you see, and provide professional insights. 
+Always include a disclaimer that you are an AI and the user should consult with a certified medical professional or radiologist for official medical diagnoses. Do not invent details you cannot see.`;
 
-    // Map frontend messages into Gemini's history / contents format format
-    // Exclude the hardcoded intro message from the frontend (id: 1) to avoid confusing the API 
-    // since the conversation must logically start with a user message for many LLMs.
-    const apiContents = messages
-      .filter((msg: any) => msg.id !== 1)
-      .map((msg: any) => {
-        const parts: any[] = [{ text: msg.content || "Analyze the provided image(s)." }];
+    // Local JSON search logic
+    let searchResults = "";
+    try {
+      const dbPath = path.join(process.cwd(), "medicines.json");
+      if (fs.existsSync(dbPath)) {
+        const rawParams = fs.readFileSync(dbPath, "utf-8");
+        const medicinesDb = JSON.parse(rawParams);
         
-        if (msg.images && Array.isArray(msg.images)) {
-          msg.images.forEach((imgBase64: string) => {
-            const mimeTypeMatch = imgBase64.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
-            if (mimeTypeMatch) {
-              parts.push({
-                inlineData: {
-                  mimeType: mimeTypeMatch[1],
-                  data: mimeTypeMatch[2]
-                }
-              });
-            }
-          });
-        }
+        // Very basic RAG text-matching search
+        const query = message ? message.toLowerCase() : "";
+        const matched = medicinesDb.filter((med: any) => 
+          med.name?.toLowerCase().includes(query) || 
+          med.description?.toLowerCase().includes(query)
+        );
 
-        return {
-          role: msg.role === "ai" ? "model" : "user",
-          parts: parts
-        };
+        if (matched.length > 0) {
+          searchResults = JSON.stringify(matched, null, 2);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not read medicines.json for RAG context:", e);
+    }
+    
+    // Inject the match into the context if found
+    if (searchResults) {
+      systemPrompt += `\n\n--- DATABASE MATCHES ---\n${searchResults}\n------------------------\n`;
+    }
+
+    // Construct the payload for OpenAI / Groq including conversation history
+    const apiMessages: any[] = [
+      { role: "system", content: systemPrompt }
+    ];
+    let modelName = "llama-3.1-8b-instant";
+    let hasImages = false;
+
+    if (body.messages && Array.isArray(body.messages)) {
+      // Process full history to retain context
+      const history = body.messages.filter((m: any) => m.id !== 1); // Skip default welcome message
+      
+      for (const msg of history) {
+        const role = msg.role === "ai" ? "assistant" : "user";
+        
+        if (role === "user") {
+          if (msg.images && msg.images.length > 0) {
+            hasImages = true;
+            const contentArray: any[] = [];
+            if (msg.content) {
+              contentArray.push({ type: "text", text: msg.content });
+            } else {
+              contentArray.push({ type: "text", text: "Please analyze the provided data." });
+            }
+            msg.images.forEach((img: string) => {
+              contentArray.push({ type: "image_url", image_url: { url: img } });
+            });
+            apiMessages.push({ role, content: contentArray });
+          } else {
+            apiMessages.push({ role, content: msg.content || "Please analyze the provided data." });
+          }
+        } else {
+          apiMessages.push({ role, content: msg.content || "" });
+        }
+      }
+    } else {
+      // Fallback for single message / direct requests without full history layout
+      if (imageBase64) {
+        hasImages = true;
+        apiMessages.push({
+          role: "user",
+          content: [
+            { type: "text", text: message || "Please analyze the provided data." },
+            { type: "image_url", image_url: { url: imageBase64 } }
+          ]
+        });
+      } else {
+        apiMessages.push({
+          role: "user",
+          content: message || "Please analyze the provided data."
+        });
+      }
+    }
+
+    // Switch to Vision model if ANY images exist in the chat history
+    if (hasImages) {
+      // We use Gemini for high-accuracy vision analysis.
+      const geminiClient = new OpenAI({
+        apiKey: process.env.GEMINI_API_KEY || "",
+        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
       });
 
-    // Generate response using full contextual history
-    const result = await model.generateContent({ contents: apiContents });
-    
-    const response = await result.response;
-    const text = response.text();
+      // Update the system message to be very clear for the Gemini model
+      apiMessages[0].content = systemPrompt;
 
-    return NextResponse.json({ response: text });
+      const chatCompletion = await geminiClient.chat.completions.create({
+        model: "gemini-2.5-flash", // High accuracy, super fast, and avoids the 429 quota limits of Pro
+        messages: apiMessages,
+        temperature: 0.1
+      });
+
+      return NextResponse.json({ response: chatCompletion.choices[0]?.message?.content || "" });
+    }
+
+    // Regular Text processing using Groq
+    const chatCompletion = await openai.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: apiMessages,
+      temperature: 0.1 // Keep it low for strict factual accuracy
+    });
+
+    const generatedText = chatCompletion.choices[0]?.message?.content || "";
+
+    return NextResponse.json({ response: generatedText });
   } catch (error: any) {
-    console.error("Gemini Error:", error);
-    return NextResponse.json({ error: error.message || "Something went wrong" }, { status: 500 });
+    console.error("Groq API Error:", error);
+    return NextResponse.json({ error: error.message || "Failed to fetch from Groq API" }, { status: 500 });
   }
 }
