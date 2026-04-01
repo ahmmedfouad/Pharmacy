@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { text, language = "en" } = await req.json();
+    const { text } = await req.json();
 
     if (!text) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
@@ -49,10 +49,11 @@ export async function POST(req: Request) {
         "Content-Type": "audio/mpeg",
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("TTS error:", error);
+    const errorMessage = error instanceof Error ? error.message : "TTS failed";
     return NextResponse.json(
-      { error: error.message || "TTS failed" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

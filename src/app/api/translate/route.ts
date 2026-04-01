@@ -38,13 +38,13 @@ export async function POST(req: Request) {
     try {
       // Groq might return {"translatedMessages": [...]} if asked nicely, or just the JSON array.
       // Let's try parsing directly.
-      let parsed = JSON.parse(responseText);
+      const parsed = JSON.parse(responseText);
       if (parsed.translatedMessages) {
         translatedMessages = parsed.translatedMessages;
       } else if (Array.isArray(parsed)) {
         translatedMessages = parsed;
       }
-    } catch (parseError) {
+    } catch {
       console.warn("Could not parse JSON from translation response:", responseText);
     }
 
