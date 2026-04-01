@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { OpenAI } from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import fs from "fs";
 import path from "path";
 
@@ -47,8 +48,8 @@ Always include a disclaimer that you are an AI and the user should consult with 
         
         // Very basic RAG text-matching search
         const query = message ? message.toLowerCase() : "";
-        const matched = medicinesDb.filter((med: any) => 
-          med.name?.toLowerCase().includes(query) || 
+        const matched = medicinesDb.filter((med: { name?: string; description?: string }) =>
+          med.name?.toLowerCase().includes(query) ||
           med.description?.toLowerCase().includes(query)
         );
 
@@ -66,37 +67,37 @@ Always include a disclaimer that you are an AI and the user should consult with 
     }
 
     // Construct the payload for OpenAI / Groq including conversation history
-    const apiMessages: any[] = [
+    const apiMessages: ChatCompletionMessageParam[] = [
       { role: "system", content: systemPrompt }
     ];
-    let modelName = "llama-3.1-8b-instant";
     let hasImages = false;
 
     if (body.messages && Array.isArray(body.messages)) {
       // Process full history to retain context
-      const history = body.messages.filter((m: any) => m.id !== 1); // Skip default welcome message
-      
+      const history = body.messages.filter((m: { id?: number }) => m.id !== 1); // Skip default welcome message
+
       for (const msg of history) {
-        const role = msg.role === "ai" ? "assistant" : "user";
-        
+        const typedMsg = msg as { role: string; content?: string; images?: string[] };
+        const role = typedMsg.role === "ai" ? "assistant" : "user";
+
         if (role === "user") {
-          if (msg.images && msg.images.length > 0) {
+          if (typedMsg.images && typedMsg.images.length > 0) {
             hasImages = true;
-            const contentArray: any[] = [];
-            if (msg.content) {
-              contentArray.push({ type: "text", text: msg.content });
+            const contentArray: Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }> = [];
+            if (typedMsg.content) {
+              contentArray.push({ type: "text", text: typedMsg.content });
             } else {
               contentArray.push({ type: "text", text: "Please analyze the provided data." });
             }
-            msg.images.forEach((img: string) => {
+            typedMsg.images.forEach((img: string) => {
               contentArray.push({ type: "image_url", image_url: { url: img } });
             });
             apiMessages.push({ role, content: contentArray });
           } else {
-            apiMessages.push({ role, content: msg.content || "Please analyze the provided data." });
+            apiMessages.push({ role, content: typedMsg.content || "Please analyze the provided data." });
           }
         } else {
-          apiMessages.push({ role, content: msg.content || "" });
+          apiMessages.push({ role, content: typedMsg.content || "" });
         }
       }
     } else {
@@ -148,8 +149,9 @@ Always include a disclaimer that you are an AI and the user should consult with 
     const generatedText = chatCompletion.choices[0]?.message?.content || "";
 
     return NextResponse.json({ response: generatedText });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Groq API Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to fetch from Groq API" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch from Groq API";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

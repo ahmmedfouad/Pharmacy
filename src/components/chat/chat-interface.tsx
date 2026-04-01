@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { Send, Image as ImageIcon, X, Loader2, User, ShieldPlus, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2 } from "lucide-react";
+import { Send, Image as ImageIcon, X, Loader2, User, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2 } from "lucide-react";
 import Logo from "@/assets/Logo.png";
 
 type Message = {
