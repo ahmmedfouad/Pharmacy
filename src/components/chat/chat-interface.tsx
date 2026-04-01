@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { Send, Image as ImageIcon, X, Loader2, User, ShieldPlus, Globe, Menu, MessageSquare, Plus } from "lucide-react";
+import { Send, Image as ImageIcon, X, Loader2, User, ShieldPlus, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2 } from "lucide-react";
 
 type Message = {
   id: number;
@@ -196,8 +196,14 @@ export function ChatInterface() {
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [typingId, setTypingId] = useState<number | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -206,6 +212,174 @@ export function ChatInterface() {
   useEffect(() => {
     scrollToBottom();
   }, []);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      audioChunksRef.current = [];
+
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+        await sendVoiceMessage(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Microphone access denied:", error);
+      alert("Please allow microphone access to use voice chat");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const sendVoiceMessage = async (audioBlob: Blob) => {
+    setIsLoading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append("audio", audioBlob);
+      formData.append("language", lang);
+
+      const transcribeRes = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!transcribeRes.ok) throw new Error("Transcription failed");
+
+      const transcribeData = await transcribeRes.json();
+      const userText = transcribeData.text;
+
+      const userMsg: Message = { 
+        id: Date.now(), 
+        role: "user", 
+        content: userText
+      };
+      
+      const newMessagesList = [...messages, userMsg];
+      setMessages(newMessagesList);
+      
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            messages: newMessagesList,
+            language: lang 
+          }),
+        });
+
+        const data = await res.json();
+        const aiResponseId = Date.now();
+        
+        if (res.ok) {
+          const aiMsg = { id: aiResponseId, role: "ai" as const, content: data.response };
+          setMessages((prev) => [...prev, aiMsg]);
+          setTypingId(aiResponseId);
+          
+          await speakResponse(data.response);
+        } else {
+          setMessages((prev) => [
+            ...prev, 
+            { id: aiResponseId, role: "ai", content: `${t.error} ${data.error || "Failed to get response"}` }
+          ]);
+        }
+      } catch (error) {
+        console.error(error);
+        setMessages((prev) => [
+          ...prev, 
+          { id: Date.now(), role: "ai", content: t.serverError }
+        ]);
+      }
+    } catch (error) {
+      console.error("Voice message error:", error);
+      setMessages((prev) => [...prev, {
+        id: Date.now(),
+        role: "ai",
+        content: "Sorry, I couldn't process your voice message. Please try again.",
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const speakResponse = async (text: string) => {
+    try {
+      setIsSpeaking(true);
+
+      // Stop previous audio if playing
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current = null;
+      }
+
+      // Try fetching high-quality TTS from ElevenLabs API
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, language: lang }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: "Unknown error" }));
+        console.error("ElevenLabs TTS failed:", errData);
+        throw new Error(`High quality TTS failed: ${errData.error || res.status}`);
+      }
+
+      const audioBlob = await res.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audioPlayerRef.current = audio;
+
+      audio.onended = () => {
+        setIsSpeaking(false);
+        setTypingId(null);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        setTypingId(null);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error(error);
+      
+      // Fallback to browser's native robotic voice
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang === "ar" ? "ar-SA" : "en-US";
+      utterance.rate = 1;
+      
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        setTypingId(null);
+      };
+      
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        setTypingId(null);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -487,16 +661,30 @@ export function ChatInterface() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={t.placeholder}
-              disabled={isLoading}
+              disabled={isLoading || isRecording}
               className={`flex-1 bg-transparent py-4 mx-2 text-[15px] text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-50 ${lang === 'ar' ? 'text-right' : 'text-left'}`}
               autoComplete="off"
             />
             
             <button
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isLoading}
+              className={`p-3 rounded-full flex-shrink-0 self-center transition-colors ${
+                isRecording
+                  ? "bg-red-500 text-white hover:bg-red-600"
+                  : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+              }`}
+              aria-label={isRecording ? "Stop recording" : "Start voice chat"}
+            >
+              {isRecording ? <Square size={20} /> : <Mic size={22} />}
+            </button>
+
+            <button
               type="submit"
-              disabled={(!inputValue.trim() && attachedImages.length === 0) || isLoading}
+              disabled={(!inputValue.trim() && !isRecording && attachedImages.length === 0) || isLoading}
               className={`p-3 md:p-4 rounded-full flex-shrink-0 self-center transition-all duration-300 ${
-                (!inputValue.trim() && attachedImages.length === 0) || isLoading
+                ((!inputValue.trim() && !isRecording && attachedImages.length === 0) || isLoading)
                   ? "bg-slate-100 text-slate-300 cursor-not-allowed"
                   : "bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-md active:scale-95"
               }`}
@@ -505,6 +693,16 @@ export function ChatInterface() {
               {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} className={lang === "ar" ? "mr-0.5 rotate-360" : "ml-0.5"} />}
             </button>
           </form>
+          {isRecording && (
+            <div className="text-center mt-3 text-sm text-red-600 font-medium animate-pulse">
+              🎤 Listening...
+            </div>
+          )}
+          {isSpeaking && (
+            <div className="text-center mt-3 text-sm text-emerald-600 font-medium animate-pulse">
+              <Volume2 size={16} className="inline mr-1" /> Speaking...
+            </div>
+          )}
           <div className="text-center mt-3 text-xs text-slate-400 font-medium">
             {t.disclaimer}
           </div>

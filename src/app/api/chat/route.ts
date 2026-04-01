@@ -31,8 +31,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing GROQ_API_KEY." }, { status: 500 });
     }
 
-    // Default system instructions (Strict Pharmacist RAG profile)
-    let systemPrompt = `You are an expert, highly accurate pharmacist. You must answer ONLY using the provided medical data from the database. Do not hallucinate or invent medical advice. If the user asks about something not in the provided context, politely apologize and advise consulting a doctor.`;
+    // Default system instructions (Pharmacist & Medical Analyst)
+    let systemPrompt = `You are an expert pharmacist and medical image analyzer. 
+For medication questions, use the provided database context if available. 
+For any provided images (like X-rays, MRIs, CT scans, pill identifiers, or medical prescriptions), you MUST analyze them thoroughly, describe what you see, and provide professional insights. 
+Always include a disclaimer that you are an AI and the user should consult with a certified medical professional or radiologist for official medical diagnoses. Do not invent details you cannot see.`;
 
     // Local JSON search logic
     let searchResults = "";
@@ -117,12 +120,27 @@ export async function POST(req: Request) {
 
     // Switch to Vision model if ANY images exist in the chat history
     if (hasImages) {
-      modelName = "meta-llama/llama-4-scout-17b-16e-instruct";
+      // We use Gemini for high-accuracy vision analysis.
+      const geminiClient = new OpenAI({
+        apiKey: process.env.GEMINI_API_KEY || "",
+        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+      });
+
+      // Update the system message to be very clear for the Gemini model
+      apiMessages[0].content = systemPrompt;
+
+      const chatCompletion = await geminiClient.chat.completions.create({
+        model: "gemini-2.5-flash", // High accuracy, super fast, and avoids the 429 quota limits of Pro
+        messages: apiMessages,
+        temperature: 0.1
+      });
+
+      return NextResponse.json({ response: chatCompletion.choices[0]?.message?.content || "" });
     }
 
-    // Make the API call using Groq
+    // Regular Text processing using Groq
     const chatCompletion = await openai.chat.completions.create({
-      model: modelName,
+      model: "llama-3.3-70b-versatile",
       messages: apiMessages,
       temperature: 0.1 // Keep it low for strict factual accuracy
     });
