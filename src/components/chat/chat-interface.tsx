@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { Send, Image as ImageIcon, X, Loader2, User, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2 } from "lucide-react";
+import { Send, Image as ImageIcon, X, Loader2, User, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2, FileText, Scan, Pill } from "lucide-react";
 import Logo from "@/assets/Logo.png";
 
 type Message = {
@@ -73,29 +73,53 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
 const translations = {
   en: {
     title: "MedScan AI",
-    subtitle: "Expert Medical Assistant & Imaging",
-    placeholder: "Ask about medications, or upload an X-ray/CT scan...",
-    disclaimer: "AI can make mistakes. Always consult with a certified medical professional or radiologist.",
+    subtitle: "Analyze prescriptions, X-rays, and medical reports instantly",
+    placeholder: "Describe your symptoms or upload a medical file...",
+    disclaimer: "⚠️ This AI does not replace a doctor. Always consult a certified medical professional for diagnosis and treatment.",
     welcome: "Hello! I am your **Pharmacy & Medical AI Assistant**. How can I help you today? 💊\n\n*Feel free to ask about medications, or upload a picture of a pill, prescription, X-ray, or CT scan for me to analyze.*",
     you: "You",
     error: "**Error:**",
     serverError: "Sorry, I am having trouble connecting to the server right now. Please try again later.",
     imageAnalysis: "[Medical Image Analysis Request]",
     newChat: "New Chat",
-    recentChats: "Recent Chats"
+    recentChats: "Recent Chats",
+    quickActions: {
+      uploadPrescription: "Upload Prescription",
+      analyzeXray: "Analyze X-ray / CT",
+      identifyMedication: "Identify Medication"
+    },
+    examplePrompts: [
+      "What is this medicine used for?",
+      "Analyze this lab report",
+      "Are these medications safe together?"
+    ],
+    emptyStateTitle: "How can I help you today?",
+    emptyStateSubtitle: "Try one of these common requests:"
   },
   ar: {
     title: "مساعدك الطبى",
-    subtitle: "مساعد طبي وخبير تصوير",
-    placeholder: "اسأل عن الأدوية، أو ارفع صورة أشعة/مقطعية...",
-    disclaimer: "قد يخطئ الذكاء الاصطناعي. استشر طبيبًا معتمدًا أو أخصائي أشعة دائمًا.",
+    subtitle: "تحليل الوصفات الطبية والأشعة والتقارير الطبية فوراً",
+    placeholder: "صف أعراضك أو ارفع ملف طبي...",
+    disclaimer: "⚠️ هذا الذكاء الاصطناعي لا يحل محل الطبيب. استشر دائماً طبيباً معتمداً للتشخيص والعلاج.",
     welcome: "مرحباً! أنا **المساعد الصيدلي والطبي الذكي**. كيف يمكنني مساعدتك اليوم؟ 💊\n\n*لا تتردد في السؤال عن الأدوية، أو رفع صورة لحبة دواء، وصفة طبية، أو أشعة سينية ومقطعية لأقوم بتحليلها.*",
     you: "أنت",
     error: "**خطأ:**",
     serverError: "عذراً، أواجه مشكلة في الاتصال بالخادم الآن. يرجى المحاولة مرة أخرى لاحقاً.",
     imageAnalysis: "[طلب تحليل صورة طبية]",
     newChat: "محادثة جديدة",
-    recentChats: "المحادثات الأخيرة"
+    recentChats: "المحادثات الأخيرة",
+    quickActions: {
+      uploadPrescription: "رفع وصفة طبية",
+      analyzeXray: "تحليل أشعة / مقطعية",
+      identifyMedication: "تحديد دواء"
+    },
+    examplePrompts: [
+      "ما هو استخدام هذا الدواء؟",
+      "حلل هذا التقرير المخبري",
+      "هل هذه الأدوية آمنة معاً؟"
+    ],
+    emptyStateTitle: "كيف يمكنني مساعدتك اليوم؟",
+    emptyStateSubtitle: "جرب أحد هذه الطلبات الشائعة:"
   }
 };
 
@@ -121,21 +145,62 @@ export function ChatInterface() {
     setSessions(prevSessions => prevSessions.map(session => {
       if (session.id === currentSessionId) {
         const newMessages = typeof updater === "function" ? updater(session.messages) : updater;
-        
+
         let newTitle = session.title;
         if (session.messages.length === 1 && newMessages.length > 1) {
           const userMsg = newMessages.find(m => m.role === "user");
           if (userMsg && userMsg.content && userMsg.content !== t.imageAnalysis && userMsg.content !== translations.ar.imageAnalysis && userMsg.content !== translations.en.imageAnalysis) {
-            newTitle = userMsg.content.slice(0, 30) + (userMsg.content.length > 30 ? "..." : "");
+            // Generate meaningful title based on intent, not just first words
+            newTitle = generateChatTitle(userMsg.content);
           } else if (userMsg && (userMsg.images || userMsg.content === t.imageAnalysis || userMsg.content === translations.ar.imageAnalysis || userMsg.content === translations.en.imageAnalysis)) {
-            newTitle = t.imageAnalysis;
+            newTitle = lang === "ar" ? "تحليل صورة طبية" : "Medical Image Analysis";
           }
         }
-        
+
         return { ...session, messages: newMessages, updatedAt: Date.now(), title: newTitle };
       }
       return session;
     }));
+  };
+
+  const generateChatTitle = (userMessage: string): string => {
+    const msg = userMessage.toLowerCase();
+
+    // Pattern matching for common medical intents
+    if (msg.includes("headache") || msg.includes("fever") || msg.includes("pain")) {
+      return lang === "ar" ? "تقييم أعراض" : "Symptom Assessment";
+    }
+    if (msg.includes("prescription") || msg.includes("analyze") && msg.includes("prescription")) {
+      return lang === "ar" ? "مراجعة وصفة طبية" : "Prescription Review";
+    }
+    if (msg.includes("safe") && (msg.includes("together") || msg.includes("with"))) {
+      return lang === "ar" ? "فحص التفاعلات الدوائية" : "Drug Interaction Check";
+    }
+    if (msg.includes("side effect") || msg.includes("adverse")) {
+      return lang === "ar" ? "الآثار الجانبية" : "Side Effects Query";
+    }
+    if (msg.includes("dose") || msg.includes("dosage") || msg.includes("how much")) {
+      return lang === "ar" ? "استفسار الجرعة" : "Dosage Inquiry";
+    }
+    if (msg.includes("allerg")) {
+      return lang === "ar" ? "استشارة حساسية" : "Allergy Consultation";
+    }
+    if (msg.includes("x-ray") || msg.includes("ct") || msg.includes("mri") || msg.includes("scan")) {
+      return lang === "ar" ? "تحليل صورة أشعة" : "Medical Imaging Review";
+    }
+    if (msg.includes("lab") || msg.includes("test result") || msg.includes("blood")) {
+      return lang === "ar" ? "تحليل نتائج مخبرية" : "Lab Results Analysis";
+    }
+    if (msg.includes("pregnant") || msg.includes("pregnancy")) {
+      return lang === "ar" ? "استشارة الحمل" : "Pregnancy Consultation";
+    }
+    if (msg.includes("child") || msg.includes("baby") || msg.includes("infant")) {
+      return lang === "ar" ? "استشارة طب الأطفال" : "Pediatric Consultation";
+    }
+
+    // Default: use first meaningful words (max 5 words)
+    const words = userMessage.trim().split(/\s+/).slice(0, 5).join(' ');
+    return words.length > 30 ? words.substring(0, 30) + "..." : words;
   };
 
   const createNewChat = () => {
@@ -413,42 +478,42 @@ export function ChatInterface() {
     e.preventDefault();
     if ((!inputValue.trim() && attachedImages.length === 0) || isLoading) return;
 
-    const newMsg: Message = { 
-      id: Date.now(), 
-      role: "user", 
+    const newMsg: Message = {
+      id: Date.now(),
+      role: "user",
       content: inputValue || (attachedImages.length > 0 ? t.imageAnalysis : ""),
       images: attachedImages.length > 0 ? [...attachedImages] : undefined
     };
-    
+
     const newMessagesList = [...messages, newMsg];
     setMessages(newMessagesList);
-    
+
     setInputValue("");
     setAttachedImages([]);
     setIsLoading(true);
     setTimeout(scrollToBottom, 100);
-    
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           messages: newMessagesList,
-          language: lang 
+          language: lang
         }),
       });
 
       const data = await res.json();
       const aiResponseId = Date.now();
-      
+
       if (res.ok) {
         setMessages((prev) => [
-          ...prev, 
+          ...prev,
           { id: aiResponseId, role: "ai", content: data.response }
         ]);
       } else {
         setMessages((prev) => [
-          ...prev, 
+          ...prev,
           { id: aiResponseId, role: "ai", content: `${t.error} ${data.error || "Failed to get response"}` }
         ]);
       }
@@ -464,12 +529,20 @@ export function ChatInterface() {
     } catch (error) {
       console.error(error);
       setMessages((prev) => [
-        ...prev, 
+        ...prev,
         { id: Date.now(), role: "ai", content: t.serverError }
       ]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleQuickAction = (actionType: 'prescription' | 'xray' | 'medication') => {
+    fileInputRef.current?.click();
+  };
+
+  const handleExamplePromptClick = (prompt: string) => {
+    setInputValue(prompt);
   };
 
   return (
@@ -524,7 +597,7 @@ export function ChatInterface() {
         {/* Sleek Header */}
         <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-100/80 px-4 md:px-6 py-4 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2 md:gap-3">
-            <button 
+            <button
               className="p-2 -ml-2 mr-1 text-slate-500 hover:bg-slate-100 rounded-full md:hidden"
               onClick={() => setIsSidebarOpen(true)}
               aria-label="Open sidebar"
@@ -539,7 +612,7 @@ export function ChatInterface() {
               <p className="text-[10px] md:text-xs font-medium text-blue-700 hidden xs:block">{t.subtitle}</p>
             </div>
           </div>
-          
+
           {/* Language Toggle Button */}
           <button
             onClick={toggleLanguage}
@@ -554,6 +627,96 @@ export function ChatInterface() {
         {/* Main Chat Area (ChatGPT style center column) */}
       <div className="flex-1 overflow-y-auto pb-36 pt-4 scroll-smooth">
         <div className="max-w-3xl mx-auto px-4 flex flex-col gap-6">
+          {/* Empty State: Quick Actions & Example Prompts */}
+          {messages.length === 1 && messages[0].id === 1 && (
+            <div className="mt-8 md:mt-16 flex flex-col items-center gap-8">
+              {/* Hero Section */}
+              <div className="text-center space-y-3 max-w-2xl">
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight">
+                  {t.emptyStateTitle}
+                </h2>
+                <p className="text-base md:text-lg text-slate-600 font-medium">
+                  {t.subtitle}
+                </p>
+              </div>
+
+              {/* Quick Action Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl">
+                <button
+                  onClick={() => handleQuickAction('prescription')}
+                  className="group flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                >
+                  <div className="w-14 h-14 rounded-full bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
+                    <FileText size={28} className="text-blue-600" />
+                  </div>
+                  <span className="font-semibold text-sm text-slate-800 text-center">
+                    {t.quickActions.uploadPrescription}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleQuickAction('xray')}
+                  className="group flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                >
+                  <div className="w-14 h-14 rounded-full bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
+                    <Scan size={28} className="text-blue-600" />
+                  </div>
+                  <span className="font-semibold text-sm text-slate-800 text-center">
+                    {t.quickActions.analyzeXray}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleQuickAction('medication')}
+                  className="group flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                >
+                  <div className="w-14 h-14 rounded-full bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
+                    <Pill size={28} className="text-blue-600" />
+                  </div>
+                  <span className="font-semibold text-sm text-slate-800 text-center">
+                    {t.quickActions.identifyMedication}
+                  </span>
+                </button>
+              </div>
+
+              {/* Example Prompts */}
+              <div className="w-full max-w-2xl space-y-3">
+                <p className="text-sm font-semibold text-slate-500 text-center">
+                  {t.emptyStateSubtitle}
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {t.examplePrompts.map((prompt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleExamplePromptClick(prompt)}
+                      className="text-left px-5 py-4 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-slate-50 transition-all text-sm text-slate-700 font-medium hover:shadow-md"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trust Indicator / Warning Banner */}
+              <div className="max-w-2xl w-full mt-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 items-start">
+                  <div className="text-amber-600 flex-shrink-0 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                      <line x1="12" y1="9" x2="12" y2="13"></line>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs md:text-sm text-amber-900 font-medium">
+                      {t.disclaimer}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {messages.map((msg) => (
             <div 
               key={msg.id} 
@@ -704,9 +867,6 @@ export function ChatInterface() {
               <Volume2 size={16} className="inline mr-1" /> Speaking...
             </div>
           )}
-          <div className="text-center mt-3 text-xs text-slate-400 font-medium">
-            {t.disclaimer}
-          </div>
         </div>
       </div>
     </div>
