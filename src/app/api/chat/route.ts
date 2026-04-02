@@ -31,6 +31,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing GROQ_API_KEY." }, { status: 500 });
     }
 
+    if (imageBase64 || (body.messages && body.messages.some((m: any) => m.images && m.images.length > 0))) {
+      if (!process.env.GEMINI_API_KEY) {
+        return NextResponse.json({ error: "Missing GEMINI_API_KEY for image analysis." }, { status: 500 });
+      }
+    }
+
     // Default system instructions (Pharmacist & Medical Analyst)
     let systemPrompt = `You are an expert pharmacist and medical image analyzer. 
 For medication questions, use the provided database context if available. 

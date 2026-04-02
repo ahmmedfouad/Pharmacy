@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import { Send, Image as ImageIcon, X, Loader2, User, ShieldPlus, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2 } from "lucide-react";
 import Logo from "@/assets/Logo.png";
@@ -531,8 +532,8 @@ export function ChatInterface() {
             >
               <Menu size={24} />
             </button>
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center shadow-md flex-shrink-0 overflow-hidden">
-              <img src={Logo.src} alt="Logo" className="w-full h-full object-cover scale-[1.35]" />
+            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center shadow-md flex-shrink-0 overflow-hidden relative">
+              <Image src={Logo} alt="Logo" fill className="object-cover scale-[1.35]" />
             </div>
             <div>
               <h1 className="text-base md:text-lg font-bold text-slate-900 leading-tight">{t.title}</h1>
@@ -563,12 +564,12 @@ export function ChatInterface() {
               }`}
             >
               {/* Avatar */}
-              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 relative ${
                 msg.role === "user" 
                   ? "bg-slate-200 text-slate-600" 
                   : "bg-white shadow-sm ring-2 ring-white overflow-hidden"
               }`}>
-                {msg.role === "user" ? <User size={18} /> : <img src={Logo.src} alt="AI" className="w-full h-full object-cover scale-[1.35]" />}
+                {msg.role === "user" ? <User size={18} /> : <Image src={Logo} alt="AI" fill className="object-cover scale-[1.35]" />}
               </div>
 
               {/* Message Content */}
