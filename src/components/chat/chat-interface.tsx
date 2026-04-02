@@ -200,6 +200,7 @@ export function ChatInterface() {
   const [typingId, setTypingId] = useState<number | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -383,6 +384,30 @@ export function ChatInterface() {
     }
   };
 
+  const stopSpeaking = () => {
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current = null;
+    }
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+    setTypingId(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e as unknown as React.FormEvent);
+    }
+  };
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [inputValue]);
+
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -483,147 +508,167 @@ export function ChatInterface() {
         />
       )}
 
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-30 w-72 bg-slate-50 border-${lang === 'ar' ? 'l' : 'r'} border-slate-200/60 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+      <div className={`fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-30 w-72 bg-slate-50/80 backdrop-blur-xl border-${lang === 'ar' ? 'l' : 'r'} border-slate-200/50 transform transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:relative md:translate-x-0 ${
         isSidebarOpen 
-          ? "translate-x-0" 
+          ? "translate-x-0 shadow-2xl" 
           : (lang === 'ar' ? "translate-x-full" : "-translate-x-full")
       }`}>
-         <div className="p-4 h-full flex flex-col gap-4">
+         <div className="p-4 h-full flex flex-col gap-6">
             <button 
               onClick={createNewChat}
-              className="flex items-center gap-2 justify-center w-full bg-blue-600 text-white rounded-xl py-3 px-4 font-semibold hover:bg-blue-700 transition-colors shadow-sm active:scale-95"
+              className="group flex items-center gap-3 justify-center w-full bg-slate-900 text-white rounded-2xl py-3.5 px-4 font-semibold hover:bg-slate-800 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-[0.98]"
             >
-              <Plus size={20} />
-              <span>{t.newChat}</span>
+              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+              <span className="text-sm tracking-tight">{t.newChat}</span>
             </button>
 
-            <div className="flex-1 overflow-y-auto mt-2">
-               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">{t.recentChats}</h3>
-               <div className="flex flex-col gap-1">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+               <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] mb-4 px-3 opacity-70">{t.recentChats}</h3>
+               <div className="flex flex-col gap-1.5 px-1">
                  {sessions.sort((a,b) => b.updatedAt - a.updatedAt).map(session => (
                     <button
                       key={session.id}
                       onClick={() => { setCurrentSessionId(session.id); setIsSidebarOpen(false); }}
-                      className={`text-left px-3 py-3 rounded-xl flex items-center gap-3 transition-colors ${
+                      className={`group relative text-left px-4 py-3.5 rounded-2xl flex items-center gap-3 transition-all duration-200 ${
                         session.id === currentSessionId 
-                          ? "bg-white shadow-sm ring-1 ring-slate-200" 
-                          : "hover:bg-slate-100 text-slate-600"
+                          ? "bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] ring-1 ring-slate-200/80" 
+                          : "hover:bg-slate-200/50 text-slate-600 hover:text-slate-900"
                       }`}
                     >
-                       <MessageSquare size={18} className={`flex-shrink-0 ${session.id === currentSessionId ? "text-blue-600" : "text-slate-400"}`} />
-                       <span className={`truncate text-sm flex-1 ${session.id === currentSessionId ? "font-semibold text-blue-900" : "font-medium"}`} dir="auto">{session.title}</span>
-                    </button>
-                 ))}
-               </div>
+                       <MessageSquare size={16} className={`flex-shrink-0 transition-colors ${session.id === currentSessionId ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`} />
+                  <span className={`truncate text-[13.5px] flex-1 ${session.id === currentSessionId ? "font-semibold text-slate-900" : "font-medium"}`} dir="auto">{session.title}</span>
+                  {session.id === currentSessionId && (
+                    <div className={`absolute ${lang === 'ar' ? 'right-0' : 'left-0'} top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-full`} />
+                  )}
+                </button>
+              ))}
             </div>
-         </div>
+          </div>
+        </div>
       </div>
 
       {/* Main Chat Area Context */}
       <div className="flex flex-col flex-1 min-w-0 h-screen relative transition-all duration-300">
         {/* Sleek Header */}
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-100/80 px-4 md:px-6 py-4 flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-2 md:gap-3">
+        <header className="sticky top-0 z-10 bg-white/70 backdrop-blur-lg border-b border-slate-200/40 px-4 md:px-8 py-4 flex items-center justify-between shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center gap-3 md:gap-4">
             <button 
-              className="p-2 -ml-2 mr-1 text-slate-500 hover:bg-slate-100 rounded-full md:hidden"
+              className="p-2.5 -ml-2 text-slate-500 hover:bg-slate-100/80 rounded-full md:hidden transition-colors"
               onClick={() => setIsSidebarOpen(true)}
               aria-label="Open sidebar"
             >
-              <Menu size={24} />
+              <Menu size={22} />
             </button>
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center shadow-md flex-shrink-0 overflow-hidden relative">
-              <Image src={Logo} alt="Logo" fill className="object-cover scale-[1.35]" />
-            </div>
-            <div>
-              <h1 className="text-base md:text-lg font-bold text-slate-900 leading-tight">{t.title}</h1>
-              <p className="text-[10px] md:text-xs font-medium text-blue-700 hidden xs:block">{t.subtitle}</p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-slate-100 flex-shrink-0 overflow-hidden relative group">
+                <Image src={Logo} alt="Logo" fill className="object-cover scale-[1.3] group-hover:scale-[1.4] transition-transform duration-500" />
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-base md:text-[17px] font-bold text-slate-900 tracking-tight leading-none mb-1">{t.title}</h1>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <p className="text-[10px] md:text-xs font-semibold text-blue-600/80 uppercase tracking-wider">{t.subtitle}</p>
+                </div>
+              </div>
             </div>
           </div>
           
-          {/* Language Toggle Button */}
-          <button
-            onClick={toggleLanguage}
-            disabled={isTranslating}
-            className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full border border-slate-200/60 hover:bg-slate-50 transition-colors text-xs md:text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-600 flex-shrink-0"
-          >
-            <Globe size={16} />
-            <span>{lang === "en" ? "العربية" : "EN"}</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleLanguage}
+              disabled={isTranslating}
+              className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200/80 hover:bg-slate-50 hover:border-slate-300 transition-all text-[13px] font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 active:scale-95 disabled:opacity-50"
+            >
+              <Globe size={15} className="text-slate-400" />
+              <span>{lang === "en" ? "العربية" : "English"}</span>
+            </button>
+          </div>
         </header>
 
-        {/* Main Chat Area (ChatGPT style center column) */}
-      <div className="flex-1 overflow-y-auto pb-36 pt-4 scroll-smooth">
-        <div className="max-w-3xl mx-auto px-4 flex flex-col gap-6">
-          {messages.map((msg) => (
-            <div 
-              key={msg.id} 
-              id={`message-${msg.id}`}
-              className={`flex gap-4 p-4 md:p-6 rounded-3xl transition-all ${
-                msg.role === "ai" ? "bg-slate-50 border border-slate-100/80 shadow-sm" : ""
-              }`}
-            >
-              {/* Avatar */}
-              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 relative ${
-                msg.role === "user" 
-                  ? "bg-slate-200 text-slate-600" 
-                  : "bg-white shadow-sm ring-2 ring-white overflow-hidden"
-              }`}>
-                {msg.role === "user" ? <User size={18} /> : <Image src={Logo} alt="AI" fill className="object-cover scale-[1.35]" />}
-              </div>
-
-              {/* Message Content */}
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-slate-900 text-sm mb-1">
-                  {msg.role === "user" ? t.you : t.title}
-                </div>
-                
-                {/* Render uploaded images in history */}
-                {msg.images && msg.images.length > 0 && (
-                  <div className="flex flex-wrap gap-3 mb-3 mt-2">
-                    {msg.images.map((imgBase64, idx) => (
-                      <div key={idx} className="relative w-32 h-32 md:w-48 md:h-48 rounded-xl overflow-hidden shadow-sm border border-slate-200/60">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
-                          src={imgBase64} 
-                          alt={`Uploaded by user ${idx + 1}`} 
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                    ))}
+        <div className="flex-1 overflow-y-auto pb-36 pt-4 scroll-smooth">
+          <div className="max-w-3xl mx-auto px-4 flex flex-col gap-8">
+            {messages.map((msg) => (
+              <div 
+                key={msg.id} 
+                id={`message-${msg.id}`}
+                className={`flex flex-col group animate-in fade-in slide-in-from-bottom-2 duration-500 ${
+                  msg.role === "user" ? "items-end" : "items-start"
+                }`}
+              >
+                <div className={`flex gap-3 md:gap-4 max-w-[90%] md:max-w-[85%] ${
+                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                }`}>
+                  {/* Avatar */}
+                  <div className={`w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center flex-shrink-0 relative mt-1 shadow-sm border ${
+                    msg.role === "user" 
+                      ? "bg-slate-900 border-slate-800 text-slate-100" 
+                      : "bg-white border-slate-100 overflow-hidden"
+                  }`}>
+                    {msg.role === "user" ? <User size={16} /> : <Image src={Logo} alt="AI" fill className="object-cover scale-[1.3]" />}
                   </div>
-                )}
 
-                <div className="text-slate-700 text-[15px] leading-relaxed break-words w-full">
-                  {msg.role === "ai" ? (
-                    <TypingMarkdown 
-                      content={msg.content} 
-                      isTyping={typingId === msg.id}
-                      onComplete={() => setTypingId(null)}
-                    />
-                  ) : (
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                  )}
+                  {/* Message Box */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className={`px-4 md:px-5 py-3 rounded-2xl md:rounded-[1.5rem] shadow-sm transition-all duration-300 ${
+                      msg.role === "user" 
+                        ? "bg-blue-600 text-white rounded-tr-none md:rounded-tr-none hover:bg-blue-700" 
+                        : "bg-white border border-slate-100/80 text-slate-700 rounded-tl-none md:rounded-tl-none hover:border-slate-200"
+                    }`}>
+                      {/* Render uploaded images in history */}
+                      {msg.images && msg.images.length > 0 && (
+                        <div className={`flex flex-wrap gap-2 mb-3 mt-1 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          {msg.images.map((imgBase64, idx) => (
+                            <div key={idx} className="relative w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden shadow-sm border border-black/5 group-hover:border-black/10 transition-colors">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img 
+                                src={imgBase64} 
+                                alt={`Uploaded by user ${idx + 1}`} 
+                                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className={`text-[15px] leading-relaxed break-words font-medium ${msg.role === 'user' ? 'text-blue-50' : 'text-slate-700'}`}>
+                        {msg.role === "ai" ? (
+                          <TypingMarkdown 
+                            content={msg.content} 
+                            isTyping={typingId === msg.id}
+                            onComplete={() => setTypingId(null)}
+                          />
+                        ) : (
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-1 opacity-0 group-hover:opacity-60 transition-opacity duration-300 ${
+                      msg.role === "user" ? "text-slate-500 text-right" : "text-slate-400"
+                    }`}>
+                      {msg.role === "user" ? t.you : t.title}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
+            ))}
+            <div ref={messagesEndRef} className="h-4" />
+          </div>
         </div>
       </div>
 
       {/* Floating Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/95 to-transparent pt-10 pb-6 px-4 pointer-events-none">
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/80 to-transparent pt-12 pb-6 px-4 pointer-events-none">
         <div className="max-w-3xl mx-auto relative pointer-events-auto">
           
           {/* Multiple Image Thumbnails Preview popup */}
           {attachedImages.length > 0 && (
-            <div className="absolute -top-24 left-4 bg-white/90 backdrop-blur p-2 rounded-xl shadow-lg ring-1 ring-slate-200 animate-in fade-in slide-in-from-bottom-2 flex gap-2 max-w-[calc(100%-2rem)] overflow-x-auto scrollbar-hide">
-              {attachedImages.map((img, idx) => (
-                <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden group flex-shrink-0 border border-slate-200/60">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img} alt={`Attachment ${idx + 1}`} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="absolute -top-24 left-0 right-0 flex justify-center px-4">
+              <div className="bg-white/90 backdrop-blur-xl p-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/50 flex gap-3 max-w-full overflow-x-auto scrollbar-hide animate-in slide-in-from-bottom-4 duration-300">
+                {attachedImages.map((img, idx) => (
+                  <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden group flex-shrink-0 border border-slate-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img} alt={`Attachment ${idx + 1}`} className="w-full h-full object-cover" />
                     <button 
                       type="button"
                       onClick={(e) => {
@@ -631,86 +676,107 @@ export function ChatInterface() {
                         e.stopPropagation();
                         removeImage(idx);
                       }} 
-                      className="text-white hover:text-red-400 p-1" 
+                      className="absolute top-1 right-1 bg-black/50 text-white rounded-lg p-0.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
                       aria-label="Remove image"
                     >
-                      <X size={20} />
+                      <X size={14} />
                     </button>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
           {/* Form Dock */}
-          <form 
-            onSubmit={handleSubmit} 
-            className="flex items-end gap-2 bg-white ring-1 ring-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.06)] shadow-blue-900/5 rounded-[2rem] p-2 pl-4 focus-within:ring-2 focus-within:ring-blue-600 focus-within:shadow-md transition-all duration-300"
-          >
-            <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageChange} className="hidden" />
-            
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="p-3 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0 self-center"
-              aria-label="Attach images"
+          <div className="relative group">
+            <form 
+              onSubmit={handleSubmit} 
+              className="flex items-end gap-2 bg-white ring-1 ring-slate-200/80 shadow-[0_10px_40px_rgba(0,0,0,0.04)] rounded-[2rem] p-2 pl-4 focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:shadow-[0_15px_50px_rgba(0,0,0,0.06)] transition-all duration-500 ease-out"
             >
-              <ImageIcon size={22} />
-            </button>
+              <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageChange} className="hidden" />
+              
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50/50 rounded-full transition-all flex-shrink-0 self-center active:scale-90"
+                aria-label="Attach images"
+              >
+                <ImageIcon size={20} />
+              </button>
 
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder={t.placeholder}
-              disabled={isLoading || isRecording}
-              className={`flex-1 bg-transparent py-4 mx-2 text-[15px] text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-50 ${lang === 'ar' ? 'text-right' : 'text-left'}`}
-              autoComplete="off"
-            />
-            
-            <button
-              type="button"
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isLoading}
-              className={`p-3 rounded-full flex-shrink-0 self-center transition-colors ${
-                isRecording
-                  ? "bg-red-500 text-white hover:bg-red-600"
-                  : "text-slate-400 hover:text-blue-700 hover:bg-blue-50"
-              }`}
-              aria-label={isRecording ? "Stop recording" : "Start voice chat"}
-            >
-              {isRecording ? <Square size={20} /> : <Mic size={22} />}
-            </button>
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t.placeholder}
+                disabled={isLoading || isRecording}
+                className={`flex-1 bg-transparent py-4 px-1 text-[15px] font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none disabled:opacity-50 resize-none max-h-48 scrollbar-hide ${lang === 'ar' ? 'text-right' : 'text-left'}`}
+                autoComplete="off"
+              />
+              
+              <div className="flex items-center gap-1.5 pr-1 self-center">
+                <button
+                  type="button"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isLoading}
+                  className={`p-3 rounded-full flex-shrink-0 transition-all duration-300 active:scale-90 ${
+                    isRecording
+                      ? "bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse"
+                      : "text-slate-400 hover:text-blue-600 hover:bg-blue-50/50"
+                  }`}
+                  aria-label={isRecording ? "Stop recording" : "Start voice chat"}
+                >
+                  {isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={20} />}
+                </button>
 
-            <button
-              type="submit"
-              disabled={(!inputValue.trim() && !isRecording && attachedImages.length === 0) || isLoading}
-              className={`p-3 md:p-4 rounded-full flex-shrink-0 self-center transition-all duration-300 ${
-                ((!inputValue.trim() && !isRecording && attachedImages.length === 0) || isLoading)
-                  ? "bg-slate-100 text-slate-300 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:scale-95"
-              }`}
-              aria-label="Send message"
-            >
-              {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} className={lang === "ar" ? "mr-0.5 rotate-360" : "ml-0.5"} />}
-            </button>
-          </form>
-          {isRecording && (
-            <div className="text-center mt-3 text-sm text-red-600 font-medium animate-pulse">
-              🎤 Listening...
-            </div>
-          )}
-          {isSpeaking && (
-            <div className="text-center mt-3 text-sm text-blue-700 font-medium animate-pulse">
-              <Volume2 size={16} className="inline mr-1" /> Speaking...
-            </div>
-          )}
-          <div className="text-center mt-3 text-xs text-slate-400 font-medium">
-            {t.disclaimer}
+                <button
+                  type="submit"
+                  disabled={(!inputValue.trim() && !isRecording && attachedImages.length === 0) || isLoading}
+                  className={`p-3.5 rounded-full flex-shrink-0 transition-all duration-500 shadow-sm ${
+                    ((!inputValue.trim() && !isRecording && attachedImages.length === 0) || isLoading)
+                      ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-200 active:scale-95"
+                  }`}
+                  aria-label="Send message"
+                >
+                  {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className={lang === "ar" ? "rotate-180" : ""} />}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Status Indicators */}
+          <div className="flex flex-col items-center gap-2 mt-4 pointer-events-none">
+            {isRecording && (
+              <div className="bg-red-50 text-red-600 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest shadow-sm border border-red-100 animate-in slide-in-from-bottom-2">
+                🎤 Listening...
+              </div>
+            )}
+            
+            {isSpeaking && (
+              <div className="flex items-center gap-3 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest shadow-sm border border-blue-100 animate-in slide-in-from-bottom-2 pointer-events-auto">
+                <div className="flex items-center gap-1">
+                  <Volume2 size={14} className="animate-bounce" />
+                  <span>Speaking...</span>
+                </div>
+                <button 
+                  onClick={stopSpeaking}
+                  className="bg-white/80 hover:bg-white text-blue-600 px-2 py-0.5 rounded-lg border border-blue-200 transition-colors flex items-center gap-1 active:scale-95"
+                >
+                  <Square size={10} fill="currentColor" />
+                  <span>Stop</span>
+                </button>
+              </div>
+            )}
+            
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.05em] px-6 text-center leading-tight opacity-60">
+              {t.disclaimer}
+            </p>
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 }
