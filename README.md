@@ -60,10 +60,12 @@ npm start
 
 This project is configured to work seamlessly with Vercel deployments. Binary files are managed via Git LFS to ensure smooth deployments.
 
-1. Ensure Git LFS is tracking your binary files:
+1. Ensure Git LFS is tracking your example images:
 ```bash
-git lfs track "*.jpg" "*.png" "*.ico"
+git lfs track "examples/*.jpg" "examples/*.png"
 ```
+
+Note: Only example images use Git LFS. Build-required assets (Logo, favicon) are regular git files for Vercel compatibility.
 
 2. Push your code to GitHub:
 ```bash
@@ -82,7 +84,7 @@ git push origin main
 **Note**: Vercel automatically handles Git LFS files. The `.vercelignore` file excludes example images and development files from deployment to optimize build times.
 
 ## Recent Updates
-- **Git LFS Integration**: Configured Git LFS to handle large binary files for better repository performance and deployment reliability.
+- **Git LFS Optimization**: Configured Git LFS for example images only. Build-required assets are regular git files for Vercel compatibility.
 - **Vercel Optimization**: Added `.vercelignore` to exclude unnecessary files from deployment.
 - **Premium Medical Blue UI**: Upgraded entire color scheme from emeralds to a deeply trusted, professional blue palette.
 - **UI Element Refinement**: Refined shadow drop-offs, ring outlines, and container depths preserving existing design tokens.

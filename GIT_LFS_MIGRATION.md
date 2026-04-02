@@ -4,9 +4,12 @@ This repository has been configured to use Git LFS (Large File Storage) for mana
 
 ## What Changed?
 
-- Added `.gitattributes` to track binary files (images, videos, etc.) with Git LFS
-- Added `.vercelignore` to optimize Vercel deployments
+- Added `.gitattributes` to track **example images** with Git LFS (examples/ directory only)
+- **Build-required images** (Logo.png, favicon.ico) are regular git files for Vercel compatibility
+- Added `.vercelignore` to optimize Vercel deployments by excluding examples
 - Updated README with Git LFS installation instructions
+
+**Important:** Only files in the `examples/` directory use Git LFS. Files in `src/` that are needed for the build are regular git files to ensure Vercel can process them correctly.
 
 ## For New Contributors
 
@@ -66,7 +69,10 @@ git fetch origin
 git pull origin main
 
 # Migrate existing files to LFS (this may take a while)
-git lfs migrate import --include="*.jpg,*.jpeg,*.png,*.gif,*.ico,*.bmp,*.webp,*.svg,*.tiff,*.pdf,*.zip,*.tar.gz,*.mp4,*.mov,*.mp3,*.wav" --everything
+git lfs migrate import --include="examples/*.jpg,examples/*.jpeg,examples/*.png,examples/*.gif" --everything
+
+# Note: Only migrate files in examples/ directory
+# DO NOT migrate src/ files - they need to be regular git files for Vercel builds
 
 # Force push the migrated history (only if coordinating with team)
 # WARNING: This rewrites history - coordinate with your team first!
