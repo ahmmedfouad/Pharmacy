@@ -1,0 +1,32 @@
+# Vercel Ignore - Files to exclude from deployment
+
+# Examples and test files (not needed in production)
+examples/
+
+# Development files
+*.md
+!README.md
+.github/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__/
+
+# Documentation
+docs/
+GIT_LFS_MIGRATION.md
