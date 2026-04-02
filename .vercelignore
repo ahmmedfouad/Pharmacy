@@ -7,11 +7,6 @@ examples/
 *.md
 !README.md
 .github/
-.git/
-
-# Environment files
-.env*
-!.env.example
 
 # IDE files
 .vscode/
@@ -34,5 +29,4 @@ __tests__/
 
 # Documentation
 docs/
-*.md
-!README.md
+GIT_LFS_MIGRATION.md
