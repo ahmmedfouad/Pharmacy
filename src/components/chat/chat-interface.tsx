@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
 import ReactMarkdown from "react-markdown";
-import { Send, Image as ImageIcon, X, Loader2, User, ShieldPlus, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2, PanelLeft, PanelRight } from "lucide-react";
-import Logo from "@/assets/Logo.png";
+import { ArrowUp, Image as ImageIcon, X, Loader2, User, ShieldPlus, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2, PanelLeft, PanelRight, Activity } from "lucide-react";
 
 type Message = {
   id: number;
@@ -74,10 +72,10 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
 const translations = {
   en: {
     title: "MedScan AI",
-    subtitle: "Expert Medical Assistant & Imaging",
+    subtitle: "Expert Medical Assistant & Rays",
     placeholder: "Ask MedScan",
     disclaimer: "AI can make mistakes. Always consult with a certified medical professional or radiologist.",
-    welcome: "Hello! I am your **Pharmacy & Medical AI Assistant**. How can I help you today? 💊\n\n*Feel free to ask about medications, or upload a picture of a pill, prescription, X-ray, or CT scan for me to analyze.*",
+    welcome: "Hello! I am your **Smart Medical Assistant**. How can I help you today? 💊👨‍⚕️\n\n*Feel free to ask about medications, or upload a picture of a pill, prescription, X-ray, or CT scan to be analyzed.* 📸🩺",
     you: "You",
     error: "**Error:**",
     serverError: "Sorry, I am having trouble connecting to the server right now. Please try again later.",
@@ -87,10 +85,10 @@ const translations = {
   },
   ar: {
     title: "مساعدك الطبى",
-    subtitle: "مساعد طبي وخبير تصوير",
+    subtitle: "مساعد طبي وخبير اشعة",
     placeholder: "اسأل ميدسكان",
     disclaimer: "قد يخطئ الذكاء الاصطناعي. استشر طبيبًا معتمدًا أو أخصائي أشعة دائمًا.",
-    welcome: "مرحباً! أنا **المساعد الصيدلي والطبي الذكي**. كيف يمكنني مساعدتك اليوم؟ 💊\n\n*لا تتردد في السؤال عن الأدوية، أو رفع صورة لحبة دواء، وصفة طبية، أو أشعة سينية ومقطعية لأقوم بتحليلها.*",
+    welcome: "مرحباً! أنا **مساعدك الطبي الذكي**. كيف يمكنني مساعدتك اليوم؟ 💊👨‍⚕️\n\n*لا تتردد في الاستفسار عن الأدوية، أو رفع صورة لقرص دواء، أو وصفة طبية، أو أشعة سينية ومقطعية لتحليلها.* 📸🩺",
     you: "أنت",
     error: "**خطأ:**",
     serverError: "عذراً، أواجه مشكلة في الاتصال بالخادم الآن. يرجى المحاولة مرة أخرى لاحقاً.",
@@ -567,8 +565,8 @@ export function ChatInterface() {
               {lang === "ar" ? <PanelRight size={22} className={!isSidebarOpen ? "" : "text-blue-600"} /> : <PanelLeft size={22} className={!isSidebarOpen ? "" : "text-blue-600"} />}
             </button>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-slate-100 flex-shrink-0 overflow-hidden relative group">
-                <Image src={Logo} alt="Logo" fill className="object-cover scale-[1.3] group-hover:scale-[1.4] transition-transform duration-500" />
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shadow-[0_2px_10px_rgba(37,99,235,0.2)] flex-shrink-0 relative group">
+                <Activity size={22} className="text-white group-hover:scale-110 transition-transform duration-500" />
               </div>
               <div className="flex flex-col">
                 <h1 className="text-base md:text-[17px] font-bold text-slate-900 tracking-tight leading-none mb-1">{t.title}</h1>
@@ -606,12 +604,12 @@ export function ChatInterface() {
                   msg.role === "user" ? "flex-row-reverse" : "flex-row"
                 }`}>
                   {/* Avatar */}
-                  <div className={`w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center flex-shrink-0 relative mt-1 shadow-sm border ${
+                  <div className={`w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center flex-shrink-0 relative mt-1 shadow-sm ${
                     msg.role === "user" 
-                      ? "bg-slate-900 border-slate-800 text-slate-100" 
-                      : "bg-white border-slate-100 overflow-hidden"
+                      ? "bg-slate-900 border border-slate-800 text-slate-100" 
+                      : "bg-gradient-to-br from-blue-600 to-blue-800 border-none text-white shadow-blue-500/20"
                   }`}>
-                    {msg.role === "user" ? <User size={16} /> : <Image src={Logo} alt="AI" fill className="object-cover scale-[1.3]" />}
+                    {msg.role === "user" ? <User size={16} /> : <Activity size={18} className="text-white" />}
                   </div>
 
                   {/* Message Box */}
@@ -747,7 +745,7 @@ export function ChatInterface() {
                   }`}
                   aria-label="Send message"
                 >
-                  {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className={lang === "ar" ? "rotate-180" : ""} />}
+                  {isLoading ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={18} strokeWidth={2.5} />}
                 </button>
               </div>
             </form>
