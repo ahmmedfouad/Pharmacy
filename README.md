@@ -15,6 +15,7 @@ Pharmacy AI is an expert medical assistant and imaging platform powered by Next.
 ### Prerequisites
 
 - Node.js 18+ installed
+- Git with [Git LFS](https://git-lfs.github.com/) installed (for handling large files)
 - API keys for:
   - [Groq](https://console.groq.com/keys) - For chat and transcription
   - [Gemini](https://aistudio.google.com/app/apikey) - For vision/image analysis
@@ -22,8 +23,9 @@ Pharmacy AI is an expert medical assistant and imaging platform powered by Next.
 
 ### Installation
 
-1. Clone the repository:
+1. Clone the repository with Git LFS support:
 ```bash
+git lfs install
 git clone https://github.com/ahmmedfouad/Pharmacy.git
 cd Pharmacy
 ```
@@ -56,15 +58,32 @@ npm start
 
 ## Deployment to Vercel
 
-1. Push your code to GitHub
-2. Import your repository in [Vercel](https://vercel.com)
-3. Add the environment variables in Vercel project settings:
+This project is configured to work seamlessly with Vercel deployments. Binary files are managed via Git LFS to ensure smooth deployments.
+
+1. Ensure Git LFS is tracking your binary files:
+```bash
+git lfs track "*.jpg" "*.png" "*.ico"
+```
+
+2. Push your code to GitHub:
+```bash
+git add .
+git commit -m "Your commit message"
+git push origin main
+```
+
+3. Import your repository in [Vercel](https://vercel.com)
+4. Add the environment variables in Vercel project settings:
    - `GROQ_API_KEY`
    - `GEMINI_API_KEY`
    - `ELEVENLABS_API_KEY`
-4. Deploy!
+5. Deploy!
+
+**Note**: Vercel automatically handles Git LFS files. The `.vercelignore` file excludes example images and development files from deployment to optimize build times.
 
 ## Recent Updates
+- **Git LFS Integration**: Configured Git LFS to handle large binary files for better repository performance and deployment reliability.
+- **Vercel Optimization**: Added `.vercelignore` to exclude unnecessary files from deployment.
 - **Premium Medical Blue UI**: Upgraded entire color scheme from emeralds to a deeply trusted, professional blue palette.
 - **UI Element Refinement**: Refined shadow drop-offs, ring outlines, and container depths preserving existing design tokens.
 - **Voice Chat Integration**: Added ElevenLabs voice chat for natural conversations.
