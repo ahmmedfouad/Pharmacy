@@ -71,7 +71,7 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
 
 const translations = {
   en: {
-    title: "MedScan AI",
+    title: "MedScan",
     subtitle: "Expert Medical Assistant & Rays",
     placeholder: "Ask MedScan",
     disclaimer: "AI can make mistakes. Always consult with a certified medical professional or radiologist.",
@@ -84,7 +84,7 @@ const translations = {
     recentChats: "Recent Chats"
   },
   ar: {
-    title: "مساعدك الطبى",
+    title: "ميدسكان",
     subtitle: "مساعد طبي وخبير اشعة",
     placeholder: "اسأل ميدسكان",
     disclaimer: "قد يخطئ الذكاء الاصطناعي. استشر طبيبًا معتمدًا أو أخصائي أشعة دائمًا.",
