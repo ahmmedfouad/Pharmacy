@@ -75,7 +75,7 @@ const translations = {
   en: {
     title: "MedScan AI",
     subtitle: "Expert Medical Assistant & Imaging",
-    placeholder: "Ask about medications, or upload an X-ray/CT scan...",
+    placeholder: "Ask MedScan",
     disclaimer: "AI can make mistakes. Always consult with a certified medical professional or radiologist.",
     welcome: "Hello! I am your **Pharmacy & Medical AI Assistant**. How can I help you today? 💊\n\n*Feel free to ask about medications, or upload a picture of a pill, prescription, X-ray, or CT scan for me to analyze.*",
     you: "You",
@@ -88,7 +88,7 @@ const translations = {
   ar: {
     title: "مساعدك الطبى",
     subtitle: "مساعد طبي وخبير تصوير",
-    placeholder: "اسأل عن الأدوية، أو ارفع صورة أشعة/مقطعية...",
+    placeholder: "اسأل ميدسكان",
     disclaimer: "قد يخطئ الذكاء الاصطناعي. استشر طبيبًا معتمدًا أو أخصائي أشعة دائمًا.",
     welcome: "مرحباً! أنا **المساعد الصيدلي والطبي الذكي**. كيف يمكنني مساعدتك اليوم؟ 💊\n\n*لا تتردد في السؤال عن الأدوية، أو رفع صورة لحبة دواء، وصفة طبية، أو أشعة سينية ومقطعية لأقوم بتحليلها.*",
     you: "أنت",
