@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import ReactMarkdown from "react-markdown";
-import { Send, Image as ImageIcon, X, Loader2, User, ShieldPlus, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2 } from "lucide-react";
+import { Send, Image as ImageIcon, X, Loader2, User, ShieldPlus, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2, PanelLeft, PanelRight } from "lucide-react";
 import Logo from "@/assets/Logo.png";
 
 type Message = {
@@ -113,7 +113,13 @@ export function ChatInterface() {
     }
   ]);
   const [currentSessionId, setCurrentSessionId] = useState<string>("default");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, []);
 
   const currentSession = sessions.find(s => s.id === currentSessionId) || sessions[0];
   const messages = currentSession.messages;
@@ -508,12 +514,13 @@ export function ChatInterface() {
         />
       )}
 
-      <div className={`fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-30 w-72 bg-slate-50/80 backdrop-blur-xl border-${lang === 'ar' ? 'l' : 'r'} border-slate-200/50 transform transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:relative md:translate-x-0 ${
+      {/* Sidebar Container */}
+      <div className={`fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-30 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:relative flex ${
         isSidebarOpen 
-          ? "translate-x-0 shadow-2xl" 
-          : (lang === 'ar' ? "translate-x-full" : "-translate-x-full")
+          ? "w-72 translate-x-0 !shadow-[0_0_20px_rgba(0,0,0,0.05)] border-" + (lang === 'ar' ? "l" : "r") + " border-slate-200/50" 
+          : "w-0 overflow-hidden " + (lang === 'ar' ? "translate-x-full md:translate-x-0 md:border-transparent" : "-translate-x-full md:translate-x-0 md:border-transparent border-none")
       }`}>
-         <div className="p-4 h-full flex flex-col gap-6">
+         <div className="w-72 bg-slate-50/80 backdrop-blur-xl h-full flex flex-col p-4 gap-6 flex-shrink-0">
             <button 
               onClick={createNewChat}
               className="group flex items-center gap-3 justify-center w-full bg-slate-900 text-white rounded-2xl py-3.5 px-4 font-semibold hover:bg-slate-800 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-[0.98]"
@@ -553,11 +560,11 @@ export function ChatInterface() {
         <header className="sticky top-0 z-10 bg-white/70 backdrop-blur-lg border-b border-slate-200/40 px-4 md:px-8 py-4 flex items-center justify-between shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-3 md:gap-4">
             <button 
-              className="p-2.5 -ml-2 text-slate-500 hover:bg-slate-100/80 rounded-full md:hidden transition-colors"
-              onClick={() => setIsSidebarOpen(true)}
-              aria-label="Open sidebar"
+              className="p-2.5 -ml-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100/80 rounded-full transition-colors flex items-center justify-center hover:scale-[1.05] active:scale-[0.95]"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle sidebar"
             >
-              <Menu size={22} />
+              {lang === "ar" ? <PanelRight size={22} className={!isSidebarOpen ? "" : "text-blue-600"} /> : <PanelLeft size={22} className={!isSidebarOpen ? "" : "text-blue-600"} />}
             </button>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-slate-100 flex-shrink-0 overflow-hidden relative group">
@@ -655,13 +662,12 @@ export function ChatInterface() {
             <div ref={messagesEndRef} className="h-4" />
           </div>
         </div>
-      </div>
 
-      {/* Floating Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/80 to-transparent pt-12 pb-6 px-4 pointer-events-none">
-        <div className="max-w-3xl mx-auto relative pointer-events-auto">
-          
-          {/* Multiple Image Thumbnails Preview popup */}
+        {/* Floating Input Area container moved INSIDE flex-1 main chat area  */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/80 to-transparent pt-12 pb-6 px-4 pointer-events-none z-10">
+          <div className="max-w-3xl mx-auto relative pointer-events-auto">
+            
+            {/* Multiple Image Thumbnails Preview popup */}
           {attachedImages.length > 0 && (
             <div className="absolute -top-24 left-0 right-0 flex justify-center px-4">
               <div className="bg-white/90 backdrop-blur-xl p-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/50 flex gap-3 max-w-full overflow-x-auto scrollbar-hide animate-in slide-in-from-bottom-4 duration-300">
@@ -777,6 +783,7 @@ export function ChatInterface() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
