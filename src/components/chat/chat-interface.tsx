@@ -51,15 +51,20 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
     <div className={isTyping ? "typing-animation-active" : ""}>
       <ReactMarkdown 
         components={{
-          p: ({node, ...props}) => <p className="mb-4 last:mb-0 inline" {...props} />,
-          ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2 marker:text-blue-600" {...props} />,
-          ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2 marker:text-blue-600 font-medium" {...props} />,
-          li: ({node, ...props}) => <li className="pl-1" {...props} />,
-          strong: ({node, ...props}) => <strong className="font-semibold text-slate-900" {...props} />,
-          h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-6 mb-3 text-slate-900" {...props} />,
-          h4: ({node, ...props}) => <h4 className="text-base font-bold mt-4 mb-2 text-slate-900" {...props} />,
-          a: ({node, ...props}) => <a className="text-blue-600 hover:underline" {...props} />,
-          blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-600 pl-4 italic text-slate-600 bg-slate-50 py-2 my-4 rounded-r-lg" {...props} />
+          p: ({node, ...props}) => <p className="mb-4 leading-relaxed tracking-wide text-[15.5px] last:mb-0 inline-block w-full" {...props} />,
+          ul: ({node, ...props}) => <ul className="pl-1 mb-5 space-y-3" {...props} />,
+          ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-5 space-y-3 font-semibold text-slate-800" {...props} />,
+          li: ({node, ...props}) => (
+            <li className="flex items-start gap-2.5">
+              <span className="text-blue-500 shrink-0 mt-0.5 text-[15px] leading-none">⚕️</span>
+              <span className="flex-1 font-medium text-slate-700 leading-relaxed" {...props} />
+            </li>
+          ),
+          strong: ({node, ...props}) => <strong className="font-bold text-slate-900 bg-blue-50/70 px-1.5 py-0.5 rounded-md border border-blue-100/50 shadow-sm inline-block" {...props} />,
+          h3: ({node, ...props}) => <h3 className="text-[17px] font-bold mt-7 mb-3 text-slate-900 flex items-center gap-2 before:content-['🏥']" {...props} />,
+          h4: ({node, ...props}) => <h4 className="text-[15.5px] font-bold mt-5 mb-2 text-slate-800 flex items-center gap-2 before:content-['✨']" {...props} />,
+          a: ({node, ...props}) => <a className="text-blue-600 font-semibold hover:underline underline-offset-4 decoration-blue-300 break-all" target="_blank" rel="noopener noreferrer" {...props} />,
+          blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-transparent pl-4 py-3 my-5 rounded-r-xl italic text-slate-700 font-medium" {...props} />
         }}
       >
         {displayedContent}
@@ -75,7 +80,12 @@ const translations = {
     subtitle: "Expert Medical Assistant & Rays",
     placeholder: "Ask MedScan",
     disclaimer: "AI can make mistakes. Always consult with a certified medical professional or radiologist.",
-    welcome: "Hello! I am your **Smart Medical Assistant**. How can I help you today? 💊👨‍⚕️\n\n*Feel free to ask about medications, or upload a picture of a pill, prescription, X-ray, or CT scan to be analyzed.* 📸🩺",
+    welcome: "Hello! I'm your AI Medical Assistant.\n\nTo provide safe and accurate guidance, I’ll ask you a few quick questions first.\n\nWhat is your age?",
+    onboardingQuestions: [
+      "What is your gender?",
+      "Do you have any chronic conditions?",
+      "Are you currently taking any medications?"
+    ],
     you: "You",
     error: "**Error:**",
     serverError: "Sorry, I am having trouble connecting to the server right now. Please try again later.",
@@ -88,7 +98,12 @@ const translations = {
     subtitle: "مساعد طبي وخبير اشعة",
     placeholder: "اسأل ميدسكان",
     disclaimer: "قد يخطئ الذكاء الاصطناعي. استشر طبيبًا معتمدًا أو أخصائي أشعة دائمًا.",
-    welcome: "مرحباً! أنا **مساعدك الطبي الذكي**. كيف يمكنني مساعدتك اليوم؟ 💊👨‍⚕️\n\n*لا تتردد في الاستفسار عن الأدوية، أو رفع صورة لقرص دواء، أو وصفة طبية، أو أشعة سينية ومقطعية لتحليلها.* 📸🩺",
+    welcome: "مرحباً! أنا مساعدك الطبي بالذكاء الاصطناعي.\n\nلتقديم إرشادات آمنة ودقيقة، سأطرح عليك بضعة أسئلة سريعة أولاً.\n\nما هو عمرك؟",
+    onboardingQuestions: [
+      "ما هو جنسك؟",
+      "هل تعاني من أي أمراض مزمنة؟",
+      "هل تتناول أي أدوية حالياً؟"
+    ],
     you: "أنت",
     error: "**خطأ:**",
     serverError: "عذراً، أواجه مشكلة في الاتصال بالخادم الآن. يرجى المحاولة مرة أخرى لاحقاً.",
@@ -112,6 +127,7 @@ export function ChatInterface() {
   ]);
   const [currentSessionId, setCurrentSessionId] = useState<string>("default");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [onboardingStep, setOnboardingStep] = useState(0);
 
   useEffect(() => {
     if (window.innerWidth < 768) {
@@ -128,12 +144,21 @@ export function ChatInterface() {
         const newMessages = typeof updater === "function" ? updater(session.messages) : updater;
         
         let newTitle = session.title;
-        if (session.messages.length === 1 && newMessages.length > 1) {
-          const userMsg = newMessages.find(m => m.role === "user");
-          if (userMsg && userMsg.content && userMsg.content !== t.imageAnalysis && userMsg.content !== translations.ar.imageAnalysis && userMsg.content !== translations.en.imageAnalysis) {
-            newTitle = userMsg.content.slice(0, 30) + (userMsg.content.length > 30 ? "..." : "");
-          } else if (userMsg && (userMsg.images || userMsg.content === t.imageAnalysis || userMsg.content === translations.ar.imageAnalysis || userMsg.content === translations.en.imageAnalysis)) {
+        const isDefaultTitle = newTitle === t.newChat || newTitle === translations.en.newChat || newTitle === translations.ar.newChat || newTitle === translations.en.imageAnalysis || newTitle === translations.ar.imageAnalysis;
+
+        if (isDefaultTitle) {
+          const userMsgs = newMessages.filter(m => m.role === "user");
+          const hasImages = userMsgs.some(m => m.images && m.images.length > 0);
+
+          if (hasImages) {
             newTitle = t.imageAnalysis;
+          } else if (userMsgs.length >= 4) { 
+            // Avoid naming chat after first initial onboarding prompt (e.g. "Age", "Gender")
+            // Instead name it based on the first major content message length (or symptom description)
+            const targetMsg = userMsgs.length > 4 ? userMsgs[4] : userMsgs[userMsgs.length - 1];
+            if (targetMsg && targetMsg.content && targetMsg.content.length > 2) {
+              newTitle = targetMsg.content.slice(0, 30) + (targetMsg.content.length > 30 ? "..." : "");
+            }
           }
         }
         
@@ -150,6 +175,7 @@ export function ChatInterface() {
       ...prev
     ]);
     setCurrentSessionId(newId);
+    setOnboardingStep(0);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
@@ -170,27 +196,52 @@ export function ChatInterface() {
     const nextLang = lang === "en" ? "ar" : "en";
     setLang(nextLang);
 
-    // If there's actual history (more than the welcome message)
     if (messages.length > 1) {
       setIsTranslating(true);
       try {
-        const res = await fetch("/api/translate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            messages: messages.filter(m => m.id !== 1), // Don't send welcome message, we handled it
-            targetLanguage: nextLang 
-          }),
+        const enT = translations.en;
+        const arT = translations.ar;
+        const messagesToTranslate: (Message & { originalIndex: number })[] = [];
+        const newMessages = [...messages];
+
+        newMessages.forEach((m, idx) => {
+          if (m.content === enT.welcome || m.content === arT.welcome) {
+            newMessages[idx] = { ...m, content: translations[nextLang].welcome };
+          } else if (enT.onboardingQuestions.includes(m.content)) {
+            const qIdx = enT.onboardingQuestions.indexOf(m.content);
+            newMessages[idx] = { ...m, content: translations[nextLang].onboardingQuestions[qIdx] };
+          } else if (arT.onboardingQuestions.includes(m.content)) {
+            const qIdx = arT.onboardingQuestions.indexOf(m.content);
+            newMessages[idx] = { ...m, content: translations[nextLang].onboardingQuestions[qIdx] };
+          } else if (m.content === enT.imageAnalysis || m.content === arT.imageAnalysis) {
+            newMessages[idx] = { ...m, content: translations[nextLang].imageAnalysis };
+          } else {
+            // For custom user and AI response messages, use the translation API
+            messagesToTranslate.push({ ...m, originalIndex: idx });
+          }
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          // Update the message array with translated text, keeping IDs and images intact
-          setMessages([
-            { id: 1, role: "ai", content: translations[nextLang].welcome },
-            ...data.translatedMessages
-          ]);
+        if (messagesToTranslate.length > 0) {
+          const res = await fetch("/api/translate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              messages: messagesToTranslate.map(m => ({ role: m.role, content: m.content })), // stripped extra fields safely
+              targetLanguage: nextLang 
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            // Map the API translated text back to exact original positions preserving order, IDs, & images
+            data.translatedMessages.forEach((tm: any, i: number) => {
+              const originalIdx = messagesToTranslate[i].originalIndex;
+              newMessages[originalIdx] = { ...newMessages[originalIdx], content: tm.content };
+            });
+          }
         }
+        
+        setMessages(() => newMessages);
       } catch (error) {
         console.error("Translation failed:", error);
       } finally {
@@ -280,6 +331,23 @@ export function ChatInterface() {
       
       const newMessagesList = [...messages, userMsg];
       setMessages(newMessagesList);
+      
+      if (onboardingStep < 3) {
+        setTimeout(() => {
+          const nextId = Date.now();
+          const responseText = t.onboardingQuestions[onboardingStep];
+          setMessages((prev) => [
+            ...prev,
+            { id: nextId, role: "ai", content: responseText }
+          ]);
+          setTypingId(nextId);
+          setOnboardingStep(prev => prev + 1);
+          speakResponse(responseText);
+        }, 500);
+        return;
+      } else if (onboardingStep < 4) {
+        setOnboardingStep(4);
+      }
       
       try {
         const res = await fetch("/api/chat", {
@@ -455,6 +523,28 @@ export function ChatInterface() {
     
     setInputValue("");
     setAttachedImages([]);
+    
+    // Quick onboarding flow check
+    if (onboardingStep < 3 && attachedImages.length === 0) {
+      setTimeout(() => scrollToBottom(), 100);
+      setTimeout(() => {
+        const nextId = Date.now();
+        setMessages((prev) => [
+          ...prev,
+          { id: nextId, role: "ai", content: t.onboardingQuestions[onboardingStep] }
+        ]);
+        setTypingId(nextId);
+        setOnboardingStep(prev => prev + 1);
+        setTimeout(() => {
+          const el = document.getElementById(`message-${nextId}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }, 600); // Slight delay for realism
+      return;
+    } else if (onboardingStep < 4) {
+      setOnboardingStep(4);
+    }
+    
     setIsLoading(true);
     setTimeout(scrollToBottom, 100);
     
@@ -533,7 +623,16 @@ export function ChatInterface() {
                  {sessions.sort((a,b) => b.updatedAt - a.updatedAt).map(session => (
                     <button
                       key={session.id}
-                      onClick={() => { setCurrentSessionId(session.id); setIsSidebarOpen(false); }}
+                      onClick={() => { 
+                        setCurrentSessionId(session.id); 
+                        setIsSidebarOpen(false); 
+                        // Estimate step based on messages length for returning chats
+                        if (session.messages.length < 7) {
+                          setOnboardingStep(Math.floor(session.messages.length / 2));
+                        } else {
+                          setOnboardingStep(4);
+                        }
+                      }}
                       className={`group relative text-left px-4 py-3.5 rounded-2xl flex items-center gap-3 transition-all duration-200 ${
                         session.id === currentSessionId 
                           ? "bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] ring-1 ring-slate-200/80" 
