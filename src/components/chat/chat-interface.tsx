@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
@@ -715,8 +715,8 @@ export function ChatInterface() {
                   <div className="flex flex-col gap-1.5">
                     <div className={`px-4 md:px-5 py-3 rounded-2xl md:rounded-[1.5rem] shadow-sm transition-all duration-300 ${
                       msg.role === "user" 
-                        ? "bg-blue-600 text-white rounded-tr-none md:rounded-tr-none hover:bg-blue-700" 
-                        : "bg-white border border-slate-100/80 text-slate-700 rounded-tl-none md:rounded-tl-none hover:border-slate-200"
+                        ? `bg-blue-600 text-white hover:bg-blue-700 ${lang === 'ar' ? 'rounded-tl-none md:rounded-tl-none' : 'rounded-tr-none md:rounded-tr-none'}`
+                        : `bg-white border border-slate-100/80 text-slate-700 hover:border-slate-200 ${lang === 'ar' ? 'rounded-tr-none md:rounded-tr-none' : 'rounded-tl-none md:rounded-tl-none'}`
                     }`}>
                       {/* Render uploaded images in history */}
                       {msg.images && msg.images.length > 0 && (
@@ -792,9 +792,13 @@ export function ChatInterface() {
 
           {/* Form Dock */}
           <div className="relative group">
+            {/* Premium Animated Glowing Light Border */}
+            <div className="absolute -inset-[1.5px] rounded-[2.1rem] bg-gradient-to-r from-blue-400 via-indigo-500 to-blue-400 opacity-0 group-focus-within:opacity-100 blur-[2px] transition-all duration-700 ease-in-out bg-[length:200%_auto] animate-[shimmer_2s_linear_infinite]" />
+            <div className="absolute -inset-[3px] rounded-[2.1rem] bg-gradient-to-r from-blue-300 via-indigo-400 to-blue-300 opacity-0 group-focus-within:opacity-40 blur-md transition-all duration-1000 ease-in-out bg-[length:200%_auto] animate-[shimmer_2.5s_linear_infinite]" />
+            
             <form 
               onSubmit={handleSubmit} 
-              className="flex items-end gap-2 bg-white ring-1 ring-slate-200/80 shadow-[0_10px_40px_rgba(0,0,0,0.04)] rounded-[2rem] p-2 pl-4 focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:shadow-[0_15px_50px_rgba(0,0,0,0.06)] transition-all duration-500 ease-out"
+              className="relative z-10 flex items-end gap-2 bg-white/95 backdrop-blur-xl ring-1 ring-slate-200/80 shadow-[0_10px_40px_rgba(0,0,0,0.04)] rounded-[2rem] p-2 pl-4 focus-within:ring-white/100 transition-all duration-500 ease-out group-focus-within:shadow-[0_15px_50px_rgba(37,99,235,0.1)]"
             >
               <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageChange} className="hidden" />
               
