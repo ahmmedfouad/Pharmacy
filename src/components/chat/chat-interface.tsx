@@ -126,7 +126,7 @@ export function ChatInterface() {
     }
   ]);
   const [currentSessionId, setCurrentSessionId] = useState<string>("default");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
 
   useEffect(() => {
