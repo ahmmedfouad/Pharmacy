@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { ArrowUp, Image as ImageIcon, X, Loader2, User, ShieldPlus, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2, PanelLeft, PanelRight, Activity } from "lucide-react";
+import { ArrowUp, Image as ImageIcon, X, Loader2, User, Globe, MessageSquare, Plus, Mic, Square, Volume2, PanelLeft, PanelRight, Activity, AlertTriangle, Sparkles } from "lucide-react";
 
 type Message = {
   id: number;
@@ -20,17 +20,23 @@ type ChatSession = {
 
 type Language = "en" | "ar";
 
+type OnboardingAlert = {
+  title: string;
+  message: string;
+  tone: "error" | "info";
+};
+
 // Helper component for Typewriter effect
 function TypingMarkdown({ content, isTyping, onComplete }: { content: string, isTyping: boolean, onComplete: () => void }) {
-  const [displayedContent, setDisplayedContent] = useState(isTyping ? "" : content);
+  const [displayedContent, setDisplayedContent] = useState("");
 
   useEffect(() => {
     if (!isTyping) {
-      setDisplayedContent(content);
       return;
     }
 
     let i = 0;
+    const resetTimeout = window.setTimeout(() => setDisplayedContent(""), 0);
     // Speed: add 2-4 chars every 20ms to mimic fast AI typing
     const charsPerTick = Math.max(1, Math.floor(content.length / 100));
     
@@ -44,8 +50,13 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
       }
     }, 20);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(resetTimeout);
+      clearInterval(interval);
+    };
   }, [content, isTyping, onComplete]);
+
+  const markdownContent = isTyping ? displayedContent : content;
 
   return (
     <div className={isTyping ? "typing-animation-active" : ""}>
@@ -67,7 +78,7 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
           blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-transparent pl-4 py-3 my-5 rounded-r-xl italic text-slate-700 font-medium" {...props} />
         }}
       >
-        {displayedContent}
+        {markdownContent}
       </ReactMarkdown>
       {isTyping && <span className="inline-block w-2.5 h-4 bg-blue-600 rounded-sm animate-pulse ml-1 align-middle" />}
     </div>
@@ -77,36 +88,90 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
 const translations = {
   en: {
     title: "MedScan",
-    subtitle: "Expert Medical Assistant & Rays",
+    subtitle: "AI-Powered Healthcare Platform",
     placeholder: "Ask MedScan",
-    disclaimer: "AI can make mistakes. Always consult with a certified medical professional or radiologist.",
+    disclaimer: "AI-powered assistant. Always consult qualified healthcare professionals for medical decisions.",
     welcome: "Hello! I'm your AI Medical Assistant.\n\nTo provide safe and accurate guidance, I’ll ask you a few quick questions first.\n\nWhat is your age?",
+    agePrompt: "What is your age?",
     onboardingQuestions: [
       "What is your gender?",
       "Do you have any chronic conditions?",
       "Are you currently taking any medications?"
     ],
+    onboardingCardTitle: "Quick onboarding",
+    onboardingCardSubtitle: "Answer these short questions so MedScan can respond more safely and personally.",
+    onboardingQuestionLabel: "Current question",
+    onboardingProgressLabel: "Step",
+    ageInputPlaceholder: "Enter your age (1-116)",
+    ageHelper: "Only ages from 1 to 116 years are accepted.",
+    ageAlertTitle: "Invalid age",
+    ageAlertMessage: "Please enter one valid age between 1 and 116 years.",
+    onboardingAttachmentTitle: "Finish onboarding first",
+    onboardingAttachmentMessage: "Complete the quick questions before uploading medical images.",
+    quickRepliesLabel: "Quick answers",
+    male: "Male",
+    female: "Female",
+    none: "None",
+    yes: "Yes",
+    diabetes: "Diabetes",
+    hypertension: "Hypertension",
+    asthma: "Asthma",
     you: "You",
     error: "**Error:**",
-    serverError: "Sorry, I am having trouble connecting to the server right now. Please try again later.",
+    serverError: "Unable to connect to the server. Please check your internet connection and try again.",
+    networkError: "Network error. Please check your connection.",
+    voiceError: "Could not process voice message. Please try again.",
+    micError: "Microphone access denied. Please allow microphone access in your browser settings.",
+    transcriptionError: "Failed to transcribe audio. Please try speaking again.",
+    ttsError: "Text-to-speech unavailable. Using fallback voice.",
+    translating: "Translating...",
+    translationError: "Translation Error",
+    translationErrorMessage: "Could not translate messages. Please try again.",
     imageAnalysis: "[Medical Image Analysis Request]",
     newChat: "New Chat",
     recentChats: "Recent Chats"
   },
   ar: {
     title: "ميدسكان",
-    subtitle: "مساعد طبي وخبير اشعة",
+    subtitle: "منصة رعاية صحية بالذكاء الاصطناعي",
     placeholder: "اسأل ميدسكان",
-    disclaimer: "قد يخطئ الذكاء الاصطناعي. استشر طبيبًا معتمدًا أو أخصائي أشعة دائمًا.",
+    disclaimer: "مساعد يعمل بالذكاء الاصطناعي. استشر دائماً متخصصي الرعاية الصحية المؤهلين للقرارات الطبية.",
     welcome: "مرحباً! أنا مساعدك الطبي بالذكاء الاصطناعي.\n\nلتقديم إرشادات آمنة ودقيقة، سأطرح عليك بضعة أسئلة سريعة أولاً.\n\nما هو عمرك؟",
+    agePrompt: "ما هو عمرك؟",
     onboardingQuestions: [
       "ما هو جنسك؟",
       "هل تعاني من أي أمراض مزمنة؟",
       "هل تتناول أي أدوية حالياً؟"
     ],
+    onboardingCardTitle: "تهيئة سريعة",
+    onboardingCardSubtitle: "أجب عن هذه الأسئلة القصيرة ليقدم ميدسكان استجابة أكثر أماناً وملاءمة.",
+    onboardingQuestionLabel: "السؤال الحالي",
+    onboardingProgressLabel: "الخطوة",
+    ageInputPlaceholder: "أدخل عمرك (1-116)",
+    ageHelper: "يتم قبول الأعمار من 1 إلى 116 سنة فقط.",
+    ageAlertTitle: "عمر غير صالح",
+    ageAlertMessage: "يرجى إدخال عمر صحيح واحد بين 1 و116 سنة.",
+    onboardingAttachmentTitle: "أكمل التهيئة أولاً",
+    onboardingAttachmentMessage: "أكمل الأسئلة السريعة قبل رفع الصور الطبية.",
+    quickRepliesLabel: "إجابات سريعة",
+    male: "ذكر",
+    female: "أنثى",
+    none: "لا يوجد",
+    yes: "نعم",
+    diabetes: "السكري",
+    hypertension: "ارتفاع الضغط",
+    asthma: "الربو",
     you: "أنت",
     error: "**خطأ:**",
-    serverError: "عذراً، أواجه مشكلة في الاتصال بالخادم الآن. يرجى المحاولة مرة أخرى لاحقاً.",
+    serverError: "تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.",
+    networkError: "خطأ في الشبكة. يرجى التحقق من اتصالك.",
+    voiceError: "تعذر معالجة الرسالة الصوتية. يرجى المحاولة مرة أخرى.",
+    micError: "تم رفض الوصول إلى الميكروفون. يرجى السماح بالوصول إلى الميكروفون في إعدادات المتصفح.",
+    transcriptionError: "فشل تحويل الصوت إلى نص. يرجى التحدث مرة أخرى.",
+    ttsError: "تحويل النص إلى كلام غير متاح. استخدام الصوت الاحتياطي.",
+    translating: "جاري الترجمة...",
+    translationError: "خطأ في الترجمة",
+    translationErrorMessage: "تعذر ترجمة الرسائل. يرجى المحاولة مرة أخرى.",
     imageAnalysis: "[طلب تحليل صورة طبية]",
     newChat: "محادثة جديدة",
     recentChats: "المحادثات الأخيرة"
@@ -128,6 +193,7 @@ export function ChatInterface() {
   const [currentSessionId, setCurrentSessionId] = useState<string>("default");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const [onboardingAlert, setOnboardingAlert] = useState<OnboardingAlert | null>(null);
 
   useEffect(() => {
     if (window.innerWidth < 768) {
@@ -194,6 +260,7 @@ export function ChatInterface() {
   // Translate existing chat history when language toggles
   const toggleLanguage = async () => {
     const nextLang = lang === "en" ? "ar" : "en";
+    const currentLang = lang;
     setLang(nextLang);
 
     if (messages.length > 1) {
@@ -204,9 +271,12 @@ export function ChatInterface() {
         const messagesToTranslate: (Message & { originalIndex: number })[] = [];
         const newMessages = [...messages];
 
+        // First pass: Handle static translations (welcome, questions, etc.)
         newMessages.forEach((m, idx) => {
           if (m.content === enT.welcome || m.content === arT.welcome) {
             newMessages[idx] = { ...m, content: translations[nextLang].welcome };
+          } else if (m.content === enT.agePrompt || m.content === arT.agePrompt) {
+            newMessages[idx] = { ...m, content: translations[nextLang].agePrompt };
           } else if (enT.onboardingQuestions.includes(m.content)) {
             const qIdx = enT.onboardingQuestions.indexOf(m.content);
             newMessages[idx] = { ...m, content: translations[nextLang].onboardingQuestions[qIdx] };
@@ -215,35 +285,75 @@ export function ChatInterface() {
             newMessages[idx] = { ...m, content: translations[nextLang].onboardingQuestions[qIdx] };
           } else if (m.content === enT.imageAnalysis || m.content === arT.imageAnalysis) {
             newMessages[idx] = { ...m, content: translations[nextLang].imageAnalysis };
+          } else if (m.content.startsWith(enT.error.replace('**', '').replace(':', '').trim()) || m.content.startsWith(arT.error.replace('**', '').replace(':', '').trim())) {
+             // Handle error messages with markdown
+             const errorPrefixEn = enT.error;
+             const errorPrefixAr = arT.error;
+             let errorContent = m.content;
+             if (m.content.includes(errorPrefixEn)) errorContent = m.content.replace(errorPrefixEn, '').trim();
+             else if (m.content.includes(errorPrefixAr)) errorContent = m.content.replace(errorPrefixAr, '').trim();
+             
+             newMessages[idx] = { ...m, content: `${translations[nextLang].error} ${errorContent}` };
           } else {
-            // For custom user and AI response messages, use the translation API
+            // For custom user and AI response messages, queue for API translation
             messagesToTranslate.push({ ...m, originalIndex: idx });
           }
         });
 
+        // Second pass: Translate custom messages via API if any exist
         if (messagesToTranslate.length > 0) {
           const res = await fetch("/api/translate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
-              messages: messagesToTranslate.map(m => ({ role: m.role, content: m.content })), // stripped extra fields safely
+              messages: messagesToTranslate.map(m => ({ 
+                role: m.role, 
+                content: m.content 
+              })),
               targetLanguage: nextLang 
             }),
           });
 
           if (res.ok) {
             const data = await res.json();
-            // Map the API translated text back to exact original positions preserving order, IDs, & images
-            data.translatedMessages.forEach((tm: any, i: number) => {
-              const originalIdx = messagesToTranslate[i].originalIndex;
-              newMessages[originalIdx] = { ...newMessages[originalIdx], content: tm.content };
-            });
+            
+            // Validate response
+            if (data.translatedMessages && Array.isArray(data.translatedMessages)) {
+              // Map the API translated text back to exact original positions
+              data.translatedMessages.forEach((tm: any, i: number) => {
+                if (i < messagesToTranslate.length) {
+                  const originalIdx = messagesToTranslate[i].originalIndex;
+                  if (tm.content) {
+                    newMessages[originalIdx] = { 
+                      ...newMessages[originalIdx], 
+                      content: tm.content 
+                    };
+                  }
+                }
+              });
+            } else {
+              console.warn("Translation API returned unexpected format, keeping original messages");
+            }
+          } else {
+            const errorData = await res.json().catch(() => ({}));
+            console.error("Translation API error:", errorData);
+            // Keep original messages on error
           }
         }
         
+        // Update messages only if we have valid translations
         setMessages(() => newMessages);
+        
       } catch (error) {
         console.error("Translation failed:", error);
+        // Revert language change on error
+        setLang(currentLang);
+        // Show error notification to user
+        setOnboardingAlert({
+          title: translations[currentLang].translationError,
+          message: translations[currentLang].translationErrorMessage,
+          tone: "error"
+        });
       } finally {
         setIsTranslating(false);
       }
@@ -267,9 +377,103 @@ export function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const isOnboardingActive = onboardingStep < 4;
+  const isAgeStep = onboardingStep === 0;
+  const currentOnboardingQuestion = isAgeStep ? t.agePrompt : t.onboardingQuestions[onboardingStep - 1];
+  const quickReplies = isAgeStep
+    ? ["18", "25", "40", "65"]
+    : onboardingStep === 1
+      ? [t.male, t.female]
+      : onboardingStep === 2
+        ? [t.none, t.diabetes, t.hypertension, t.asthma]
+        : onboardingStep === 3
+          ? [t.none, t.yes]
+          : [];
+
+  const showOnboardingAlert = (title: string, message: string, tone: OnboardingAlert["tone"] = "error") => {
+    setOnboardingAlert({ title, message, tone });
+  };
+
+  const normalizeAgeAnswer = (value: string) => {
+    const matches = value.match(/\d+/g) ?? [];
+
+    if (matches.length !== 1) {
+      return null;
+    }
+
+    const age = Number(matches[0]);
+    if (!Number.isInteger(age) || age < 1 || age > 116) {
+      return null;
+    }
+
+    return String(age);
+  };
+
+  const sanitizeAgeInput = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, "").slice(0, 3);
+
+    if (!digitsOnly) {
+      return "";
+    }
+
+    const numericValue = Number(digitsOnly);
+    if (numericValue > 116) {
+      return "116";
+    }
+
+    return digitsOnly;
+  };
+
+  const normalizeAnswer = (value: string) => {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return null;
+    }
+
+    if (!isAgeStep) {
+      return trimmed;
+    }
+
+    const normalizedAge = normalizeAgeAnswer(trimmed);
+    if (!normalizedAge) {
+      showOnboardingAlert(t.ageAlertTitle, t.ageAlertMessage);
+      return null;
+    }
+
+    setOnboardingAlert(null);
+    return normalizedAge;
+  };
+
+  const showNextOnboardingQuestion = (stepIndex: number, delay: number, shouldSpeak = false) => {
+    setTimeout(() => scrollToBottom(), 100);
+    setTimeout(() => {
+      const nextQuestion = t.onboardingQuestions[stepIndex];
+      if (!nextQuestion) return;
+
+      const nextId = Date.now();
+      setMessages((prev) => [...prev, { id: nextId, role: "ai", content: nextQuestion }]);
+      setTypingId(nextId);
+      setOnboardingStep(stepIndex + 1);
+
+      setTimeout(() => {
+        const el = document.getElementById(`message-${nextId}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+
+      if (shouldSpeak) {
+        void speakResponse(nextQuestion);
+      }
+    }, delay);
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, []);
+
+  useEffect(() => {
+    setOnboardingAlert(null);
+  }, [onboardingStep, currentSessionId, lang]);
 
   const startRecording = async () => {
     try {
@@ -294,7 +498,11 @@ export function ChatInterface() {
       setIsRecording(true);
     } catch (error) {
       console.error("Microphone access denied:", error);
-      alert("Please allow microphone access to use voice chat");
+      setOnboardingAlert({
+        title: lang === "en" ? "Microphone Access Required" : "مطلوب الوصول إلى الميكروفون",
+        message: t.micError,
+        tone: "error"
+      });
     }
   };
 
@@ -318,32 +526,30 @@ export function ChatInterface() {
         body: formData,
       });
 
-      if (!transcribeRes.ok) throw new Error("Transcription failed");
+      if (!transcribeRes.ok) {
+        const errorData = await transcribeRes.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || "Transcription failed");
+      }
 
       const transcribeData = await transcribeRes.json();
       const userText = transcribeData.text;
+      const normalizedUserText = normalizeAnswer(userText);
+
+      if (!normalizedUserText) {
+        return;
+      }
 
       const userMsg: Message = { 
         id: Date.now(), 
         role: "user", 
-        content: userText
+        content: normalizedUserText
       };
       
       const newMessagesList = [...messages, userMsg];
       setMessages(newMessagesList);
       
       if (onboardingStep < 3) {
-        setTimeout(() => {
-          const nextId = Date.now();
-          const responseText = t.onboardingQuestions[onboardingStep];
-          setMessages((prev) => [
-            ...prev,
-            { id: nextId, role: "ai", content: responseText }
-          ]);
-          setTypingId(nextId);
-          setOnboardingStep(prev => prev + 1);
-          speakResponse(responseText);
-        }, 500);
+        showNextOnboardingQuestion(onboardingStep, 500, true);
         return;
       } else if (onboardingStep < 4) {
         setOnboardingStep(4);
@@ -383,10 +589,11 @@ export function ChatInterface() {
       }
     } catch (error) {
       console.error("Voice message error:", error);
+      const errorMessage = error instanceof Error ? error.message : t.voiceError;
       setMessages((prev) => [...prev, {
         id: Date.now(),
         role: "ai",
-        content: "Sorry, I couldn't process your voice message. Please try again.",
+        content: `${t.error} ${errorMessage}`,
       }]);
     } finally {
       setIsLoading(false);
@@ -481,6 +688,12 @@ export function ChatInterface() {
   }, [inputValue]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isOnboardingActive) {
+      e.target.value = "";
+      showOnboardingAlert(t.onboardingAttachmentTitle, t.onboardingAttachmentMessage, "info");
+      return;
+    }
+
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -507,14 +720,30 @@ export function ChatInterface() {
     setAttachedImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleQuickReply = async (reply: string) => {
+    setInputValue(reply);
+    const normalized = normalizeAnswer(reply);
+    if (!normalized) return;
+
+    const syntheticEvent = { preventDefault: () => {} } as React.FormEvent;
+    setInputValue(normalized);
+    await Promise.resolve();
+    await handleSubmit(syntheticEvent, normalized);
+  };
+
+  const handleSubmit = async (e: React.FormEvent, prefilledValue?: string) => {
     e.preventDefault();
-    if ((!inputValue.trim() && attachedImages.length === 0) || isLoading) return;
+    const rawInput = prefilledValue ?? inputValue.trim();
+
+    if ((!rawInput && attachedImages.length === 0) || isLoading) return;
+
+    const normalizedInput = rawInput ? normalizeAnswer(rawInput) : rawInput;
+    if (rawInput && !normalizedInput) return;
 
     const newMsg: Message = { 
       id: Date.now(), 
       role: "user", 
-      content: inputValue || (attachedImages.length > 0 ? t.imageAnalysis : ""),
+      content: normalizedInput || (attachedImages.length > 0 ? t.imageAnalysis : ""),
       images: attachedImages.length > 0 ? [...attachedImages] : undefined
     };
     
@@ -526,20 +755,7 @@ export function ChatInterface() {
     
     // Quick onboarding flow check
     if (onboardingStep < 3 && attachedImages.length === 0) {
-      setTimeout(() => scrollToBottom(), 100);
-      setTimeout(() => {
-        const nextId = Date.now();
-        setMessages((prev) => [
-          ...prev,
-          { id: nextId, role: "ai", content: t.onboardingQuestions[onboardingStep] }
-        ]);
-        setTypingId(nextId);
-        setOnboardingStep(prev => prev + 1);
-        setTimeout(() => {
-          const el = document.getElementById(`message-${nextId}`);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-      }, 600); // Slight delay for realism
+      showNextOnboardingQuestion(onboardingStep, 600);
       return;
     } else if (onboardingStep < 4) {
       setOnboardingStep(4);
@@ -582,10 +798,18 @@ export function ChatInterface() {
       }, 100);
 
     } catch (error) {
-      console.error(error);
+      console.error("Chat error:", error);
+      let errorMessage = t.serverError;
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage = t.networkError;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       setMessages((prev) => [
         ...prev, 
-        { id: Date.now(), role: "ai", content: t.serverError }
+        { id: Date.now(), role: "ai", content: `${t.error} ${errorMessage}` }
       ]);
     } finally {
       setIsLoading(false);
@@ -608,18 +832,18 @@ export function ChatInterface() {
           ? "w-72 translate-x-0 !shadow-[0_0_20px_rgba(0,0,0,0.05)] border-" + (lang === 'ar' ? "l" : "r") + " border-slate-200/50" 
           : "w-0 overflow-hidden " + (lang === 'ar' ? "translate-x-full md:translate-x-0 md:border-transparent" : "-translate-x-full md:translate-x-0 md:border-transparent border-none")
       }`}>
-         <div className="w-72 bg-slate-50/80 backdrop-blur-xl h-full flex flex-col p-4 gap-6 flex-shrink-0">
+         <div className="w-72 bg-gradient-to-b from-slate-50 to-white backdrop-blur-xl h-full flex flex-col p-4 gap-6 flex-shrink-0 border-r border-slate-200/50">
             <button 
               onClick={createNewChat}
-              className="group flex items-center gap-3 justify-center w-full bg-slate-900 text-white rounded-2xl py-3.5 px-4 font-semibold hover:bg-slate-800 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-[0.98]"
+              className="group flex items-center gap-3 justify-center w-full bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-xl py-3.5 px-4 font-semibold hover:from-slate-800 hover:to-slate-700 transition-all shadow-lg shadow-slate-900/20 active:scale-[0.98]"
             >
               <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
               <span className="text-sm tracking-tight">{t.newChat}</span>
             </button>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-               <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] mb-4 px-3 opacity-70">{t.recentChats}</h3>
-               <div className="flex flex-col gap-1.5 px-1">
+               <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-4 px-3">{t.recentChats}</h3>
+               <div className="flex flex-col gap-2 px-1">
                  {sessions.sort((a,b) => b.updatedAt - a.updatedAt).map(session => (
                     <button
                       key={session.id}
@@ -633,10 +857,10 @@ export function ChatInterface() {
                           setOnboardingStep(4);
                         }
                       }}
-                      className={`group relative text-left px-4 py-3.5 rounded-2xl flex items-center gap-3 transition-all duration-200 ${
+                      className={`group relative text-left px-4 py-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${
                         session.id === currentSessionId 
-                          ? "bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] ring-1 ring-slate-200/80" 
-                          : "hover:bg-slate-200/50 text-slate-600 hover:text-slate-900"
+                          ? "bg-white shadow-lg ring-2 ring-blue-600/20 border border-blue-100" 
+                          : "hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-transparent"
                       }`}
                     >
                        <MessageSquare size={16} className={`flex-shrink-0 transition-colors ${session.id === currentSessionId ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`} />
@@ -653,25 +877,31 @@ export function ChatInterface() {
 
       {/* Main Chat Area Context */}
       <div className="flex flex-col flex-1 min-w-0 h-screen relative transition-all duration-300">
-        {/* Sleek Header */}
-        <header className="sticky top-0 z-10 bg-white/70 backdrop-blur-lg border-b border-slate-200/40 px-4 md:px-8 py-4 flex items-center justify-between shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+        {/* Modern Professional Header */}
+        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-2xl border-b border-slate-200/50 px-4 md:px-8 py-4 flex items-center justify-between shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
           <div className="flex items-center gap-3 md:gap-4">
             <button 
-              className="p-2.5 -ml-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100/80 rounded-full transition-colors flex items-center justify-center hover:scale-[1.05] active:scale-[0.95]"
+              className="p-2.5 -ml-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all flex items-center justify-center hover:scale-105 active:scale-95"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               aria-label="Toggle sidebar"
             >
               {lang === "ar" ? <PanelRight size={22} className={!isSidebarOpen ? "" : "text-blue-600"} /> : <PanelLeft size={22} className={!isSidebarOpen ? "" : "text-blue-600"} />}
             </button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shadow-[0_2px_10px_rgba(37,99,235,0.2)] flex-shrink-0 relative group">
-                <Activity size={22} className="text-white group-hover:scale-110 transition-transform duration-500" />
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 flex items-center justify-center shadow-lg shadow-blue-600/25 flex-shrink-0 relative group">
+                <Activity size={24} className="text-white group-hover:scale-110 transition-transform duration-300" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
-              <div className="flex flex-col">
-                <h1 className="text-base md:text-[17px] font-bold text-slate-900 tracking-tight leading-none mb-1">{t.title}</h1>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <p className="text-[10px] md:text-xs font-semibold text-blue-600/80 uppercase tracking-wider">{t.subtitle}</p>
+              <div className="flex flex-col gap-0.5">
+                <h1 className="text-base md:text-lg font-bold text-slate-900 tracking-tight leading-none">{t.title}</h1>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-[11px] md:text-xs font-semibold text-emerald-600">Online</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -681,10 +911,19 @@ export function ChatInterface() {
             <button
               onClick={toggleLanguage}
               disabled={isTranslating}
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200/80 hover:bg-slate-50 hover:border-slate-300 transition-all text-[13px] font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all text-[13px] font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
-              <Globe size={15} className="text-slate-400" />
-              <span>{lang === "en" ? "العربية" : "English"}</span>
+              {isTranslating ? (
+                <>
+                  <Loader2 size={16} className="text-blue-600 animate-spin" />
+                  <span>{t.translating}</span>
+                </>
+              ) : (
+                <>
+                  <Globe size={16} className="text-slate-500" />
+                  <span>{lang === "en" ? "العربية" : "English"}</span>
+                </>
+              )}
             </button>
           </div>
         </header>
@@ -692,68 +931,118 @@ export function ChatInterface() {
         <div className="flex-1 overflow-y-auto pb-36 pt-4 scroll-smooth">
           <div className="max-w-3xl mx-auto px-4 flex flex-col gap-8">
             {messages.map((msg) => (
-              <div 
-                key={msg.id} 
-                id={`message-${msg.id}`}
-                className={`flex flex-col group animate-in fade-in slide-in-from-bottom-2 duration-500 ${
-                  msg.role === "user" ? "items-end" : "items-start"
-                }`}
-              >
-                <div className={`flex gap-3 md:gap-4 max-w-[90%] md:max-w-[85%] ${
-                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                }`}>
-                  {/* Avatar */}
-                  <div className={`w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center flex-shrink-0 relative mt-1 shadow-sm ${
-                    msg.role === "user" 
-                      ? "bg-slate-900 border border-slate-800 text-slate-100" 
-                      : "bg-gradient-to-br from-blue-600 to-blue-800 border-none text-white shadow-blue-500/20"
+              <div key={msg.id} className="contents">
+                <div 
+                  id={`message-${msg.id}`}
+                  className={`flex flex-col group animate-in fade-in slide-in-from-bottom-2 duration-500 ${
+                    msg.role === "user" ? "items-end" : "items-start"
+                  }`}
+                >
+                  <div className={`flex gap-3 md:gap-4 max-w-[90%] md:max-w-[85%] ${
+                    msg.role === "user" ? "flex-row-reverse" : "flex-row"
                   }`}>
-                    {msg.role === "user" ? <User size={16} /> : <Activity size={18} className="text-white" />}
-                  </div>
-
-                  {/* Message Box */}
-                  <div className="flex flex-col gap-1.5">
-                    <div className={`px-4 md:px-5 py-3 rounded-2xl md:rounded-[1.5rem] shadow-sm transition-all duration-300 ${
+                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-2xl flex items-center justify-center flex-shrink-0 relative mt-1 ${
                       msg.role === "user" 
-                        ? `bg-blue-600 text-white hover:bg-blue-700 ${lang === 'ar' ? 'rounded-tl-none md:rounded-tl-none' : 'rounded-tr-none md:rounded-tr-none'}`
-                        : `bg-white border border-slate-100/80 text-slate-700 hover:border-slate-200 ${lang === 'ar' ? 'rounded-tr-none md:rounded-tr-none' : 'rounded-tl-none md:rounded-tl-none'}`
+                        ? "bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 text-slate-100 shadow-lg shadow-slate-900/20" 
+                        : "bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 border-2 border-blue-500 text-white shadow-lg shadow-blue-500/30"
                     }`}>
-                      {/* Render uploaded images in history */}
-                      {msg.images && msg.images.length > 0 && (
-                        <div className={`flex flex-wrap gap-2 mb-3 mt-1 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          {msg.images.map((imgBase64, idx) => (
-                            <div key={idx} className="relative w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden shadow-sm border border-black/5 group-hover:border-black/10 transition-colors">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img 
-                                src={imgBase64} 
-                                alt={`Uploaded by user ${idx + 1}`} 
-                                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className={`text-[15px] leading-relaxed break-words font-medium ${msg.role === 'user' ? 'text-blue-50' : 'text-slate-700'}`}>
-                        {msg.role === "ai" ? (
-                          <TypingMarkdown 
-                            content={msg.content} 
-                            isTyping={typingId === msg.id}
-                            onComplete={() => setTypingId(null)}
-                          />
-                        ) : (
-                          <p className="whitespace-pre-wrap">{msg.content}</p>
-                        )}
-                      </div>
+                      {msg.role === "user" ? <User size={16} /> : <Activity size={18} className="text-white" />}
+                      <div className={`absolute inset-0 rounded-2xl ${
+                        msg.role === "user" 
+                          ? "bg-gradient-to-br from-slate-600/20 to-transparent" 
+                          : "bg-gradient-to-br from-blue-400/20 to-transparent"
+                      } opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                     </div>
-                    
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-1 opacity-0 group-hover:opacity-60 transition-opacity duration-300 ${
-                      msg.role === "user" ? "text-slate-500 text-right" : "text-slate-400"
-                    }`}>
-                      {msg.role === "user" ? t.you : t.title}
-                    </span>
+
+                    <div className="flex flex-col gap-1.5">
+                      <div className={`px-5 md:px-6 py-3.5 rounded-2xl md:rounded-[1.75rem] shadow-md transition-all duration-300 ${
+                        msg.role === "user" 
+                          ? `bg-gradient-to-br from-blue-600 to-blue-700 text-white hover:shadow-lg hover:shadow-blue-600/20 border border-blue-500/20 ${lang === 'ar' ? 'rounded-tl-sm md:rounded-tl-sm' : 'rounded-tr-sm md:rounded-tr-sm'}`
+                          : `bg-white border border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-lg ${lang === 'ar' ? 'rounded-tr-sm md:rounded-tr-sm' : 'rounded-tl-sm md:rounded-tl-sm'}`
+                      }`}>
+                        {msg.images && msg.images.length > 0 && (
+                          <div className={`flex flex-wrap gap-2 mb-3 mt-1 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            {msg.images.map((imgBase64, idx) => (
+                              <div key={idx} className="relative w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden shadow-sm border border-black/5 group-hover:border-black/10 transition-colors">
+                                <img 
+                                  src={imgBase64} 
+                                  alt={`Uploaded by user ${idx + 1}`} 
+                                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className={`text-[15px] leading-relaxed break-words font-medium ${msg.role === 'user' ? 'text-blue-50' : 'text-slate-700'}`}>
+                          {msg.role === "ai" ? (
+                            <TypingMarkdown 
+                              content={msg.content} 
+                              isTyping={typingId === msg.id}
+                              onComplete={() => setTypingId(null)}
+                            />
+                          ) : (
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-1 opacity-0 group-hover:opacity-60 transition-opacity duration-300 ${
+                        msg.role === "user" ? "text-slate-500 text-right" : "text-slate-400"
+                      }`}>
+                        {msg.role === "user" ? t.you : t.title}
+                      </span>
+                    </div>
                   </div>
                 </div>
+
+                {isOnboardingActive && msg.id === messages[messages.length - 1]?.id && msg.role === "ai" && (
+                  <div className="flex flex-col items-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex gap-3 md:gap-4 max-w-[90%] md:max-w-[85%]">
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-2xl flex items-center justify-center flex-shrink-0 relative mt-1 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 border-2 border-blue-500 text-white shadow-lg shadow-blue-500/30">
+                        <Sparkles size={18} className="text-white" />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <div className={`px-5 md:px-6 py-5 rounded-2xl md:rounded-[1.75rem] rounded-tl-sm border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-blue-50/50 shadow-lg shadow-blue-600/10`}>
+                            <div className="flex items-start justify-between gap-4 mb-4">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                                  <p className="text-xs font-bold uppercase tracking-wider text-blue-700">{t.onboardingCardTitle}</p>
+                                </div>
+                                <p className="text-sm font-bold text-slate-900 mb-1">{t.onboardingQuestionLabel}: {currentOnboardingQuestion}</p>
+                                <p className="text-xs text-slate-600 leading-relaxed">{isAgeStep ? t.ageHelper : t.onboardingCardSubtitle}</p>
+                              </div>
+                              <div className="rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 px-3.5 py-2.5 text-center shadow-lg shadow-blue-600/20">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-200">{t.onboardingProgressLabel}</p>
+                                <p className="text-lg font-bold text-white">{Math.min(onboardingStep + 1, 4)}/4</p>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600">{t.quickRepliesLabel}</p>
+                              <div className="flex flex-wrap gap-2">
+                                {quickReplies.map((reply) => (
+                                  <button
+                                    key={reply}
+                                    type="button"
+                                    onClick={() => void handleQuickReply(reply)}
+                                    className="rounded-xl border-2 border-blue-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-md transition-all hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50 hover:shadow-lg active:translate-y-0"
+                                  >
+                                    {reply}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                        </div>
+
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-1 text-slate-400 opacity-60">
+                          {t.title}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} className="h-4" />
@@ -770,7 +1059,6 @@ export function ChatInterface() {
               <div className="bg-white/90 backdrop-blur-xl p-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/50 flex gap-3 max-w-full overflow-x-auto scrollbar-hide animate-in slide-in-from-bottom-4 duration-300">
                 {attachedImages.map((img, idx) => (
                   <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden group flex-shrink-0 border border-slate-200">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={img} alt={`Attachment ${idx + 1}`} className="w-full h-full object-cover" />
                     <button 
                       type="button"
@@ -790,48 +1078,70 @@ export function ChatInterface() {
             </div>
           )}
 
-          {/* Form Dock */}
+          {/* Form Dock with Enhanced Design */}
           <div className="relative group">
-            {/* Premium Animated Glowing Light Border */}
-            <div className="absolute -inset-[1.5px] rounded-[2.1rem] bg-gradient-to-r from-blue-400 via-indigo-500 to-blue-400 opacity-0 group-focus-within:opacity-100 blur-[2px] transition-all duration-700 ease-in-out bg-[length:200%_auto] animate-[shimmer_2s_linear_infinite]" />
-            <div className="absolute -inset-[3px] rounded-[2.1rem] bg-gradient-to-r from-blue-300 via-indigo-400 to-blue-300 opacity-0 group-focus-within:opacity-40 blur-md transition-all duration-1000 ease-in-out bg-[length:200%_auto] animate-[shimmer_2.5s_linear_infinite]" />
+            {/* Premium Animated Glowing Border */}
+            <div className="absolute -inset-[2px] rounded-[2rem] bg-gradient-to-r from-blue-400 via-blue-600 to-blue-400 opacity-0 group-focus-within:opacity-100 blur-sm transition-all duration-500 bg-[length:200%_auto] animate-[shimmer_2s_linear_infinite]" />
             
             <form 
               onSubmit={handleSubmit} 
-              className="relative z-10 flex items-end gap-2 bg-white/95 backdrop-blur-xl ring-1 ring-slate-200/80 shadow-[0_10px_40px_rgba(0,0,0,0.04)] rounded-[2rem] p-2 pl-4 focus-within:ring-white/100 transition-all duration-500 ease-out group-focus-within:shadow-[0_15px_50px_rgba(37,99,235,0.1)]"
+              className="relative z-10 flex items-end gap-2 bg-white backdrop-blur-xl ring-2 ring-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.06)] rounded-[2rem] p-2 pl-4 focus-within:ring-blue-600 focus-within:ring-2 transition-all duration-300 group-focus-within:shadow-[0_20px_60px_rgba(37,99,235,0.15)]"
             >
               <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageChange} className="hidden" />
               
               <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50/50 rounded-full transition-all flex-shrink-0 self-center active:scale-90"
-                aria-label="Attach images"
-              >
-                <ImageIcon size={20} />
-              </button>
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isOnboardingActive}
+                  className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all flex-shrink-0 self-center active:scale-90 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+                  aria-label="Attach images"
+                >
+                  <ImageIcon size={20} />
+                </button>
 
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={t.placeholder}
-                disabled={isLoading || isRecording}
-                className={`flex-1 bg-transparent py-4 px-1 text-[15px] font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none disabled:opacity-50 resize-none max-h-48 scrollbar-hide ${lang === 'ar' ? 'text-right' : 'text-left'}`}
-                autoComplete="off"
-              />
+              {isAgeStep ? (
+                <input
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(sanitizeAgeInput(e.target.value));
+                    if (onboardingAlert) setOnboardingAlert(null);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder={t.ageInputPlaceholder}
+                  disabled={isLoading || isRecording}
+                  inputMode="numeric"
+                  maxLength={3}
+                  aria-invalid={Boolean(onboardingAlert)}
+                  className={`flex-1 bg-transparent py-4 px-1 text-[15px] font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none disabled:opacity-50 ${onboardingAlert ? 'text-red-700 placeholder:text-red-300' : ''} ${lang === 'ar' ? 'text-right' : 'text-left'}`}
+                  autoComplete="off"
+                />
+              ) : (
+                <textarea
+                  ref={textareaRef}
+                  rows={1}
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    if (onboardingAlert) setOnboardingAlert(null);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder={currentOnboardingQuestion || t.placeholder}
+                  disabled={isLoading || isRecording}
+                  aria-invalid={false}
+                  className={`flex-1 bg-transparent py-4 px-1 text-[15px] font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none disabled:opacity-50 resize-none max-h-48 scrollbar-hide ${lang === 'ar' ? 'text-right' : 'text-left'}`}
+                  autoComplete="off"
+                />
+              )}
               
               <div className="flex items-center gap-1.5 pr-1 self-center">
                 <button
                   type="button"
                   onClick={isRecording ? stopRecording : startRecording}
                   disabled={isLoading}
-                  className={`p-3 rounded-full flex-shrink-0 transition-all duration-300 active:scale-90 ${
+                  className={`p-3 rounded-xl flex-shrink-0 transition-all duration-300 active:scale-90 ${
                     isRecording
-                      ? "bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse"
-                      : "text-slate-400 hover:text-blue-600 hover:bg-blue-50/50"
+                      ? "bg-red-500 text-white shadow-lg shadow-red-500/30 animate-pulse"
+                      : "text-slate-400 hover:text-blue-600 hover:bg-blue-50"
                   }`}
                   aria-label={isRecording ? "Stop recording" : "Start voice chat"}
                 >
@@ -841,10 +1151,10 @@ export function ChatInterface() {
                 <button
                   type="submit"
                   disabled={(!inputValue.trim() && !isRecording && attachedImages.length === 0) || isLoading}
-                  className={`p-3.5 rounded-full flex-shrink-0 transition-all duration-500 shadow-sm ${
+                  className={`p-3.5 rounded-xl flex-shrink-0 transition-all duration-300 shadow-md ${
                     ((!inputValue.trim() && !isRecording && attachedImages.length === 0) || isLoading)
                       ? "bg-slate-100 text-slate-300 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-200 active:scale-95"
+                      : "bg-gradient-to-br from-blue-600 to-blue-700 text-white hover:shadow-lg hover:shadow-blue-600/30 active:scale-95 hover:from-blue-700 hover:to-blue-800"
                   }`}
                   aria-label="Send message"
                 >
@@ -856,6 +1166,18 @@ export function ChatInterface() {
 
           {/* Status Indicators */}
           <div className="flex flex-col items-center gap-2 mt-4 pointer-events-none">
+            {onboardingAlert && (
+              <div className={`w-full max-w-3xl pointer-events-auto animate-in slide-in-from-bottom-2 duration-300 rounded-2xl border px-4 py-3 shadow-sm ${onboardingAlert.tone === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-blue-200 bg-blue-50 text-blue-700'}`}>
+                <div className="flex items-start gap-3">
+                  <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold">{onboardingAlert.title}</p>
+                    <p className="text-xs font-medium opacity-90">{onboardingAlert.message}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {isRecording && (
               <div className="bg-red-50 text-red-600 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest shadow-sm border border-red-100 animate-in slide-in-from-bottom-2">
                 🎤 Listening...

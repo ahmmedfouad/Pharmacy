@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MedScan - Medical Ai Assistant",
-  description: "MedScan is an AI-powered medical assistant designed to help users understand and manage their health. It provides personalized insights, answers medical questions, and offers guidance on various health topics. With MedScan, you can easily access reliable medical information and support for a healthier lifestyle.",
+  title: "MedScan",
+  description: "MedScan helps you understand and manage your health with confidence. Get personalized medical insights, analyze medical images, and access reliable health information anytime.",
 };
 
 export default function RootLayout({
@@ -27,7 +28,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </body>
     </html>
   );

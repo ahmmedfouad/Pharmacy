@@ -36,15 +36,15 @@ const agentTranslations = {
 };
 
 function TypingMarkdown({ content, isTyping, onComplete }: { content: string, isTyping: boolean, onComplete: () => void }) {
-  const [displayedContent, setDisplayedContent] = useState(isTyping ? "" : content);
+  const [displayedContent, setDisplayedContent] = useState("");
 
   useEffect(() => {
     if (!isTyping) {
-      setDisplayedContent(content);
       return;
     }
 
     let i = 0;
+    const resetTimeout = window.setTimeout(() => setDisplayedContent(""), 0);
     const charsPerTick = Math.max(1, Math.floor(content.length / 100));
     
     const interval = setInterval(() => {
@@ -57,8 +57,13 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
       }
     }, 20);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(resetTimeout);
+      clearInterval(interval);
+    };
   }, [content, isTyping, onComplete]);
+
+  const markdownContent = isTyping ? displayedContent : content;
 
   return (
     <div>
@@ -71,7 +76,7 @@ function TypingMarkdown({ content, isTyping, onComplete }: { content: string, is
           strong: ({node, ...props}) => <strong className="font-semibold text-slate-900" {...props} />,
         }}
       >
-        {displayedContent}
+        {markdownContent}
       </ReactMarkdown>
       {isTyping && <span className="inline-block w-2.5 h-4 bg-blue-600 rounded-sm animate-pulse ml-1 align-middle" />}
     </div>

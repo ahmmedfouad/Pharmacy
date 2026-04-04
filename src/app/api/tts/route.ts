@@ -51,9 +51,26 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error("TTS error:", error);
+    
+    let errorMessage = "Text-to-speech conversion failed";
+    let statusCode = 500;
+    
+    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      errorMessage = "Unable to connect to text-to-speech service";
+      statusCode = 503;
+    } else if (error.status === 429) {
+      errorMessage = "Too many speech requests. Please wait a moment.";
+      statusCode = 429;
+    } else if (error.status === 401) {
+      errorMessage = "Text-to-speech authentication failed";
+      statusCode = 401;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     return NextResponse.json(
-      { error: error.message || "TTS failed" },
-      { status: 500 }
+      { error: errorMessage, code: error.code || 'TTS_ERROR' },
+      { status: statusCode }
     );
   }
 }

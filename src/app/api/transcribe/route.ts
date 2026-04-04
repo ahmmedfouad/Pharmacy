@@ -36,9 +36,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ text });
   } catch (error: any) {
     console.error("Transcription error:", error);
+    
+    let errorMessage = "Failed to transcribe audio";
+    let statusCode = 500;
+    
+    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      errorMessage = "Unable to connect to transcription service";
+      statusCode = 503;
+    } else if (error.status === 429) {
+      errorMessage = "Too many transcription requests. Please wait a moment.";
+      statusCode = 429;
+    } else if (error.message?.includes('file size')) {
+      errorMessage = "Audio file is too large. Please record a shorter message.";
+      statusCode = 413;
+    } else if (error.message?.includes('format')) {
+      errorMessage = "Audio format not supported. Please try again.";
+      statusCode = 415;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     return NextResponse.json(
-      { error: error.message || "Transcription failed" },
-      { status: 500 }
+      { error: errorMessage, code: error.code || 'TRANSCRIPTION_ERROR' },
+      { status: statusCode }
     );
   }
 }

@@ -12,6 +12,8 @@ const openai = new OpenAI({
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const language = body.language || "en";
+    const isArabic = language === "ar";
     
     // We handle exactly what the user requested: message and imageBase64
     // We also silently fall back to `messages` from the older implementation so the UI doesn't break.
@@ -38,10 +40,14 @@ export async function POST(req: Request) {
     }
 
     // Default system instructions (Pharmacist & Medical Analyst)
-    let systemPrompt = `You are an expert pharmacist and medical image analyzer. 
+    let systemPrompt = `You are strictly an expert pharmacist and healthcare AI assistant named MedScan. 
+Your ONLY purpose is to assist with medical, pharmaceutical, and health-related questions. 
+RULE 1: IF THE USER ASKS ABOUT NON-MEDICAL TOPICS, YOU MUST REFUSE TO ANSWER and gently guide them back to health/medicine.
+RULE 2: You MUST respond ONLY in ${isArabic ? "Arabic (العربية)" : "English"}.
+RULE 3: ABSOLUTELY NO CHINESE, JAPANESE, OR FOREIGN CHARACTERS ALLOWED. You are strictly forbidden from outputting characters like '提供' or '特别'. Use ONLY standard ${isArabic ? "Arabic" : "English"} alphabet and punctuation.
 For medication questions, use the provided database context if available. 
-For any provided images (like X-rays, MRIs, CT scans, pill identifiers, or medical prescriptions), you MUST analyze them thoroughly, describe what you see, and provide professional insights. 
-Always include a disclaimer that you are an AI and the user should consult with a certified medical professional or radiologist for official medical diagnoses. Do not invent details you cannot see.`;
+For any provided images, thoroughly analyze them, describe what you see, and provide professional insights. 
+Always include a short disclaimer that you are an AI and the user should consult with a certified medical professional.`;
 
     // Local JSON search logic
     let searchResults = "";
@@ -75,7 +81,7 @@ Always include a disclaimer that you are an AI and the user should consult with 
     const apiMessages: any[] = [
       { role: "system", content: systemPrompt }
     ];
-    let modelName = "llama-3.1-8b-instant";
+    const modelName = "llama-3.1-8b-instant";
     let hasImages = false;
 
     if (body.messages && Array.isArray(body.messages)) {
@@ -151,11 +157,38 @@ Always include a disclaimer that you are an AI and the user should consult with 
       temperature: 0.1 // Keep it low for strict factual accuracy
     });
 
-    const generatedText = chatCompletion.choices[0]?.message?.content || "";
+    let generatedText = chatCompletion.choices[0]?.message?.content || "";
+
+    // Physically strip any Chinese/Japanese/Korean characters to prevent hallucination leaks
+    generatedText = generatedText.replace(/[\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF]/g, "");
 
     return NextResponse.json({ response: generatedText });
   } catch (error: any) {
-    console.error("Groq API Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to fetch from Groq API" }, { status: 500 });
+    console.error("API Error:", error);
+    
+    // Provide more specific error messages
+    let errorMessage = "An unexpected error occurred";
+    let statusCode = 500;
+    
+    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      errorMessage = "Unable to connect to AI service. Please check your internet connection.";
+      statusCode = 503;
+    } else if (error.status === 429) {
+      errorMessage = "Too many requests. Please wait a moment and try again.";
+      statusCode = 429;
+    } else if (error.status === 401) {
+      errorMessage = "Authentication failed. Please contact support.";
+      statusCode = 401;
+    } else if (error.message?.includes('timeout')) {
+      errorMessage = "Request timed out. Please try again.";
+      statusCode = 504;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    return NextResponse.json({ 
+      error: errorMessage,
+      code: error.code || 'UNKNOWN_ERROR'
+    }, { status: statusCode });
   }
 }
