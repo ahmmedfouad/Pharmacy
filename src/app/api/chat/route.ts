@@ -3,6 +3,8 @@ import { OpenAI } from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import fs from "fs";
 import path from "path";
+import type { UserProfile } from "@/types/user-profile";
+import { GENDER_LABELS, CHRONIC_CONDITION_LABELS } from "@/types/user-profile";
 
 // Initialize the OpenAI client using the Groq Base URL
 const openai = new OpenAI({
@@ -10,9 +12,40 @@ const openai = new OpenAI({
   baseURL: "https://api.groq.com/openai/v1",
 });
 
+/** Build a concise natural-language summary of the user profile for the system prompt */
+function buildProfileSummary(profile: UserProfile): string {
+  const gender = GENDER_LABELS[profile.gender]?.en ?? profile.gender;
+  const conditions = profile.chronicConditions
+    .filter(c => c !== "none")
+    .map(c => CHRONIC_CONDITION_LABELS[c]?.en ?? c);
+  const conditionsStr = conditions.length > 0 ? conditions.join(", ") : "None";
+  const meds = profile.currentMedications.trim() || "None";
+  const allergies = profile.knownAllergies.trim() || "None";
+  const pregnancy = profile.isPregnant ? " (currently pregnant)" : profile.isNursing ? " (currently nursing)" : "";
+
+  return `**USER HEALTH PROFILE (already collected — do NOT re-ask these questions):**
+- Age: ${profile.age}
+- Gender: ${gender}${pregnancy}
+- Chronic conditions: ${conditionsStr}
+- Current medications: ${meds}
+- Known allergies: ${allergies}`;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+
+    // Validate and extract userProfile — fall back to undefined if shape is invalid
+    const rawProfile = body.userProfile;
+    const userProfile: UserProfile | undefined =
+      rawProfile &&
+      typeof rawProfile.age === "number" &&
+      rawProfile.age >= 1 &&
+      rawProfile.age <= 120 &&
+      typeof rawProfile.gender === "string" &&
+      Array.isArray(rawProfile.chronicConditions)
+        ? (rawProfile as UserProfile)
+        : undefined;
     
     // We handle exactly what the user requested: message and imageBase64
     // We also silently fall back to `messages` from the older implementation so the UI doesn't break.
@@ -36,14 +69,19 @@ export async function POST(req: Request) {
     let systemPrompt = `You are an expert pharmacist and medical image analyzer specialized in providing safe, accurate medical guidance.
 
 **CRITICAL MEDICAL SAFETY PROTOCOL:**
-Before providing any medication recommendations or medical advice, you MUST collect the following information from the user:
+${userProfile
+  ? `The user has already completed an onboarding health profile. ${buildProfileSummary(userProfile)}
+
+Use this profile as context for every response. Skip asking for information that has already been provided. Only ask follow-up questions about CURRENT SYMPTOMS and their duration.`
+  : `Before providing any medication recommendations or medical advice, you MUST collect the following information from the user:
 
 1. Current symptoms (what, where, intensity)
 2. Duration of symptoms (how long)
 3. Chronic diseases (diabetes, hypertension, heart disease, kidney disease, liver disease, etc.)
 4. Current medications being taken (list all)
 5. Known medication allergies
-6. Age and gender (critical for dosing and safety)
+6. Age and gender (critical for dosing and safety)`
+}
 
 **Guidelines:**
 - Ask these questions conversationally and naturally - not as a rigid form

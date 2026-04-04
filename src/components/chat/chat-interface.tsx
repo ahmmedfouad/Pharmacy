@@ -2,8 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { Send, Image as ImageIcon, X, Loader2, User, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2, FileText, Scan, Pill } from "lucide-react";
+import { Send, Image as ImageIcon, X, Loader2, User, Globe, Menu, MessageSquare, Plus, Mic, Square, Volume2, FileText, Scan, Pill, Settings } from "lucide-react";
 import Logo from "@/assets/Logo.png";
+import type { UserProfile } from "@/types/user-profile";
+import { GENDER_LABELS, CHRONIC_CONDITION_LABELS } from "@/types/user-profile";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+
+const USER_PROFILE_STORAGE_KEY = "medscan_user_profile";
 
 type Message = {
   id: number;
@@ -126,6 +131,33 @@ const translations = {
 export function ChatInterface() {
   const [lang, setLang] = useState<Language>("en");
   const t = translations[lang];
+
+  // User profile — loaded from localStorage on mount
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(USER_PROFILE_STORAGE_KEY);
+      if (stored) {
+        setUserProfile(JSON.parse(stored) as UserProfile);
+      } else {
+        setShowOnboarding(true);
+      }
+    } catch {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  const handleOnboardingComplete = (profile: UserProfile) => {
+    setUserProfile(profile);
+    setShowOnboarding(false);
+    try {
+      localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+    } catch {
+      // storage not available — continue without persistence
+    }
+  };
 
   const [sessions, setSessions] = useState<ChatSession[]>([
     {
@@ -346,7 +378,8 @@ export function ChatInterface() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
             messages: newMessagesList,
-            language: lang 
+            language: lang,
+            userProfile
           }),
         });
 
@@ -499,7 +532,8 @@ export function ChatInterface() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessagesList,
-          language: lang
+          language: lang,
+          userProfile
         }),
       });
 
@@ -547,6 +581,11 @@ export function ChatInterface() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white font-sans text-slate-800" dir={lang === "ar" ? "rtl" : "ltr"}>
+      {/* Interactive Onboarding Wizard */}
+      {showOnboarding && (
+        <OnboardingWizard lang={lang} onComplete={handleOnboardingComplete} />
+      )}
+
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
@@ -589,6 +628,29 @@ export function ChatInterface() {
                  ))}
                </div>
             </div>
+
+            {/* User Profile Summary in Sidebar */}
+            {userProfile && (
+              <div className="mt-auto pt-4 border-t border-slate-200">
+                <div className="bg-blue-50 rounded-xl p-3 text-xs text-slate-700 space-y-1">
+                  <p className="font-semibold text-blue-700 flex items-center gap-1">
+                    <User size={12} /> {lang === "ar" ? "ملفك الصحي" : "Your Health Profile"}
+                  </p>
+                  <p>{lang === "ar" ? "العمر:" : "Age:"} <span className="font-medium">{userProfile.age}</span></p>
+                  <p>{lang === "ar" ? "الجنس:" : "Gender:"} <span className="font-medium">{GENDER_LABELS[userProfile.gender][lang]}</span></p>
+                  {userProfile.chronicConditions.filter(c => c !== "none").length > 0 && (
+                    <p className="truncate">{lang === "ar" ? "أمراض مزمنة:" : "Conditions:"} <span className="font-medium">{userProfile.chronicConditions.filter(c => c !== "none").map(c => CHRONIC_CONDITION_LABELS[c][lang]).join(", ")}</span></p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowOnboarding(true)}
+                  className="mt-2 w-full flex items-center justify-center gap-2 text-xs text-slate-500 hover:text-blue-600 py-2 rounded-xl hover:bg-slate-100 transition-colors"
+                >
+                  <Settings size={13} />
+                  {lang === "ar" ? "تعديل الملف الصحي" : "Edit Health Profile"}
+                </button>
+              </div>
+            )}
          </div>
       </div>
 
